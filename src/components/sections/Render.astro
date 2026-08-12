@@ -203,10 +203,10 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
             <h2 class="sx-h2">{section.heading}</h2>
             {section.body && <p class="sx-lede">{section.body}</p>}
             <div class="sx-imagecards">
-              {enabledCategories.map((c) => (
+              {enabledCategories.map((c, n) => (
                 <a class="sx-imagecard" href={c.href}>
                   {section.showImages && c.heroImage && (
-                    <img src={c.heroImage} alt="" width="420" height="300" loading="lazy" decoding="async" />
+                    <img src={c.heroImage} alt="" width="420" height="300" loading={n < 2 ? 'eager' : 'lazy'} decoding="async" />
                   )}
                   <div class="sx-imagecard-body">
                     <h3>{c.label}</h3>
@@ -231,8 +231,8 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
             <h2 class="sx-h2">{section.heading}</h2>
             {section.body && <p class="sx-lede">{section.body}</p>}
             <div class="sx-grid">
-              {rows.map((product) => (
-                <ProductCard product={product} />
+              {rows.map((product, n) => (
+                <ProductCard product={product} index={n} />
               ))}
             </div>
             {section.disclaimer && <p class="sx-smallprint">{section.disclaimer}</p>}

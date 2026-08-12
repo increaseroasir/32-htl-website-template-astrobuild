@@ -112,8 +112,8 @@ const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site
           </div>
         ) : (
           <div class="inv-grid">
-            {products.map((product) => (
-              <ProductCard product={product} />
+            {products.map((product, i) => (
+              <ProductCard product={product} index={i} />
             ))}
           </div>
         )}

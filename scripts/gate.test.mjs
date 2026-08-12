@@ -306,6 +306,23 @@ test('PASSES on the two whitelisted material neutrals', async () => {
 });
 
 /**
+ * An <img> with no reserved space (C16 / E-01). The fixture strips width
+ * from the header logo; the check must name the file.
+ */
+test('FAILS when an img loses its width attribute', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    const file = join(dir, 'src', 'components', 'Header.astro');
+    const body = await readFile(file, 'utf8');
+    await writeFile(file, body.replace('width="165"', ''));
+  });
+  assertFails(run, 'Images declare width and height');
+});
+
+test('PASSES with every img dimensioned', async () => {
+  assertPasses(await withFixture(null), 'Images declare width and height');
+});
+
+/**
  * The viewport lock coming back (C12 / G-10, N-05). The gate used to
  * REQUIRE user-scalable=no on landing pages; now any reappearance in src
  * is a failure the source check catches without a dev server.

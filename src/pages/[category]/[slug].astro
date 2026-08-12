@@ -105,13 +105,14 @@ const productSchema =
       <article class="pdp wrap">
         <div class="pdp-media">
           <div class:list={['pdp-hero-img', muted && 'is-muted']}>
-            {image && <img src={image} alt={product!.inventoryName} fetchpriority="high" decoding="async" />}
+            {/* 1200×900 = the hero's 4:3 crop box (object-fit: cover). */}
+            {image && <img src={image} alt={product!.inventoryName} width="1200" height="900" fetchpriority="high" decoding="async" />}
             {badge && <span class:list={['product-tag', muted && 'product-tag-dark']}>{badge}</span>}
           </div>
           {gallery.length > 0 && (
             <div class="pdp-gallery">
               {gallery.map((g, i) => (
-                <img src={g} alt={`${product!.inventoryName} — view ${i + 2}`} loading="lazy" decoding="async" />
+                <img src={g} alt={`${product!.inventoryName} — view ${i + 2}`} width="600" height="600" loading="lazy" decoding="async" />
               ))}
             </div>
           )}

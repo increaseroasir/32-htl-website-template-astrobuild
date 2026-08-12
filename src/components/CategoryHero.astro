@@ -27,7 +27,10 @@ const heroImage = toAbsoluteAsset(image);
 ---
 
 <section class="cat-hero on-dark">
-  {heroImage && <img class="cat-hero-img" src={heroImage} alt="" aria-hidden="true" fetchpriority="high" />}
+  {/* Absolutely positioned cover image — the band's size never depends on
+      it, but declared dimensions still let the browser start layout with
+      the right intrinsic ratio (E-01/E-04). */}
+  {heroImage && <img class="cat-hero-img" src={heroImage} alt="" aria-hidden="true" width="1600" height="900" fetchpriority="high" />}
   <div class="cat-hero-bg"></div>
   <div class="cat-hero-steam cat-hero-steam-1"></div>
   <div class="cat-hero-steam cat-hero-steam-2"></div>

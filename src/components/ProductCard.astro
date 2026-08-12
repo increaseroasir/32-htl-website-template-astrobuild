@@ -24,6 +24,12 @@ interface Props {
   product: Product;
   /** Override the financing destination. Rarely needed. */
   financingHref?: string;
+  /**
+   * Position in the parent's list (C16 / E-05). The first two cards are
+   * above the fold on every listing layout, so they load eagerly; the
+   * rest stay lazy. Omitted = lazy, the safe default.
+   */
+  index?: number;
 }
 
 /**
@@ -33,7 +39,8 @@ interface Props {
  * whether the page exists and whether anything links to it — there is no way
  * for the two to disagree.
  */
-const { product, financingHref } = Astro.props;
+const { product, financingHref, index } = Astro.props;
+const eager = typeof index === 'number' && index < 2;
 const financingLink = financingHref ?? (site.financing ? '/financing' : null);
 
 const image = assetOrWarn(product.primaryImage, `product "${product.slug}"`);
@@ -56,7 +63,18 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
 
 <article class:list={['inv-card', muted && 'is-muted']}>
   <a class="inv-card-img" href={href} aria-label={product.inventoryName}>
-    {image && <img src={image} alt={product.inventoryName} loading="lazy" decoding="async" />}
+    {/* 800×600 = the card's 4:3 crop box; CSS object-fit covers, so a
+        different intrinsic ratio crops rather than distorts (E-01). */}
+    {image && (
+      <img
+        src={image}
+        alt={product.inventoryName}
+        width="800"
+        height="600"
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+      />
+    )}
     {
       badge && (
         <span class:list={['product-tag', muted && 'product-tag-dark']}>{badge}</span>

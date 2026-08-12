@@ -418,7 +418,32 @@ async function sourceChecks() {
     pass('No viewport lock in src');
   }
 
-  // --- 9. D1 migrations configured ---------------------------------
+  // --- 9. Images declare width and height ---------------------------
+  // An <img> with no dimensions gives the browser nothing to reserve, so
+  // the page shifts as each one arrives — paid mobile traffic feels it
+  // worst (E-01/E-02/E-04). admin/ is internal chrome.
+  const imgOffenders = [];
+  for (const file of files) {
+    const rel = relative(ROOT, file);
+    if (!rel.endsWith('.astro') && !rel.endsWith('.tsx')) continue;
+    if (rel.startsWith('src/pages/admin/')) continue;
+    const body = stripComments(await readFile(file, 'utf8'));
+    for (const tag of body.match(/<img\b[^>]*>/gs) ?? []) {
+      if (!/\bwidth=/.test(tag) || !/\bheight=/.test(tag)) {
+        imgOffenders.push(`${rel} — ${tag.slice(0, 60).replace(/\s+/g, ' ')}…`);
+      }
+    }
+  }
+  if (imgOffenders.length) {
+    fail(
+      'Images declare width and height',
+      `${imgOffenders.join('\n      ')} — no reserved space, the page shifts as it loads.`,
+    );
+  } else {
+    pass('Images declare width and height');
+  }
+
+  // --- 10. D1 migrations configured ---------------------------------
   // A schema change on a live client database is impossible without a
   // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
   // tables entirely, so an edit to schema.sql never reaches a client.

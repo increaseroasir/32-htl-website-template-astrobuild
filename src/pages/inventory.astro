@@ -84,8 +84,8 @@ const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
         </div>
       ) : (
         <div class="inv-grid">
-          {products.map((product) => (
-            <ProductCard product={product} />
+          {products.map((product, i) => (
+            <ProductCard product={product} index={i} />
           ))}
         </div>
       )
