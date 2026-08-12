@@ -1,12 +1,20 @@
 /* ============================================================
-   PREMIUM THEME LAYER — exact port of Sun Pool's theme.css.
-   Gradient stops, shadow values, easing curves and animation
-   timings are lifted verbatim from the live site.
+   PREMIUM THEME LAYER — port of Sun Pool's theme.css.
+   Gradient stops, shadow geometry, easing curves and animation
+   timings are lifted from the live site.
 
-   The ONE difference from the original: not one colour literal.
-   Every value reads a --brand-* custom property that
-   <BrandTokens /> writes from client.config.ts, including the
-   alpha variants via rgb(var(--brand-*-rgb) / a).
+   Not one colour literal lives in this file (C-01 sweep, enforced
+   by the gate). Every value reads a --brand-* custom property that
+   <BrandTokens /> writes from client.config.ts, including alpha
+   variants via rgb(var(--brand-*-rgb) / a). The ONLY literals the
+   gate permits anywhere in src/ are two whitelisted MATERIAL greys
+   (the image-placeholder gradient in ProductCard/[slug]) — chrome,
+   not brand, documented beside the gate's ALLOWED set.
+
+   Deliberate deviations from the verbatim port (C15): white glosses
+   ride on-dark-strong, black shadow tints ride abyss (faint navy),
+   the red CTA top stop is urgent (AA), ghost borders are .4, and
+   focus is a two-layer ring. Ratios: scripts/contrast-check.mjs.
 
    Change the config, and the same design system renders in a
    different palette. Do not add a hex code to this file.
@@ -27,8 +35,14 @@ a{color:inherit;text-decoration:none}
 
 ::selection{background:var(--brand-accent);color:var(--brand-night)}
 
+/* Two-layer focus ring (N-02/N-07): accent-dark carries white and abyss
+   surfaces; the thin on-dark-strong inner edge carries primary/navy panels
+   where accent-dark alone fails (1.67:1). Ratios: scripts/contrast-check.mjs.
+   Note: while focused, the box-shadow overrides .btn-gold's depth shadow —
+   accepted, the ring is the more important signal. */
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
-  outline:3px solid var(--brand-accent);outline-offset:2px
+  outline:3px solid var(--brand-accent-dark);outline-offset:2px;
+  box-shadow:0 0 0 2px var(--brand-on-dark-strong)
 }
 
 h1,h2,h3,h4,h5,h6{font-family:var(--brand-font-display);font-weight:700;letter-spacing:-0.01em;line-height:1.12}
@@ -65,25 +79,25 @@ h1,h2,h3,h4,h5,h6{font-family:var(--brand-font-display);font-weight:700;letter-s
 
 .btn-gold{color:var(--brand-night);
   background:linear-gradient(180deg,var(--brand-accent-lift) 0%,var(--brand-accent) 52%,var(--brand-accent-press) 100%);
-  box-shadow:inset 0 1px 0 rgb(255 255 255 / .55),0 12px 28px -10px rgb(var(--brand-accent-deep-rgb) / .7)}
-.btn-gold:hover{box-shadow:inset 0 1px 0 rgb(255 255 255 / .65),0 18px 38px -12px rgb(var(--brand-accent-deep-rgb) / .85)}
+  box-shadow:inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / .55),0 12px 28px -10px rgb(var(--brand-accent-deep-rgb) / .7)}
+.btn-gold:hover{box-shadow:inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / .65),0 18px 38px -12px rgb(var(--brand-accent-deep-rgb) / .85)}
 .btn-gold::after{content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(115deg,transparent 32%,rgb(255 255 255 / .55) 50%,transparent 68%);
+  background:linear-gradient(115deg,transparent 32%,rgb(var(--brand-on-dark-strong-rgb) / .55) 50%,transparent 68%);
   transform:translateX(-130%);transition:transform .65s ease}
 .btn-gold:hover::after{transform:translateX(130%)}
 
-.btn-ghost{background:rgb(255 255 255 / .04);color:#fff;border-color:rgb(255 255 255 / .3);
+.btn-ghost{background:rgb(var(--brand-on-dark-strong-rgb) / .04);color:var(--brand-on-dark-strong);border-color:rgb(var(--brand-on-dark-strong-rgb) / .4);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.btn-ghost:hover{border-color:rgb(255 255 255 / .85);background:rgb(255 255 255 / .1)}
+.btn-ghost:hover{border-color:rgb(var(--brand-on-dark-strong-rgb) / .85);background:rgb(var(--brand-on-dark-strong-rgb) / .1)}
 
-.btn-ghost-blue{background:transparent;color:var(--brand-primary);border-color:var(--brand-line)}
+.btn-ghost-blue{background:transparent;color:var(--brand-primary);border-color:var(--brand-line-strong)}
 .btn-ghost-blue:hover{border-color:var(--brand-primary);background:rgb(var(--brand-primary-rgb) / .06)}
 
-.btn-red{color:#fff;background:linear-gradient(180deg,var(--brand-urgent-light),var(--brand-urgent-dark));
-  box-shadow:inset 0 1px 0 rgb(255 255 255 / .25),0 12px 26px -10px rgb(var(--brand-urgent-rgb) / .6)}
+.btn-red{color:var(--brand-on-dark-strong);background:linear-gradient(180deg,var(--brand-urgent),var(--brand-urgent-dark));
+  box-shadow:inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / .25),0 12px 26px -10px rgb(var(--brand-urgent-rgb) / .6)}
 
-.btn-navy{color:#fff;background:linear-gradient(180deg,var(--brand-primary),var(--brand-deep));
-  box-shadow:inset 0 1px 0 rgb(255 255 255 / .18),0 12px 26px -12px rgb(var(--brand-deep-rgb) / .8)}
+.btn-navy{color:var(--brand-on-dark-strong);background:linear-gradient(180deg,var(--brand-primary),var(--brand-deep));
+  box-shadow:inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / .18),0 12px 26px -12px rgb(var(--brand-deep-rgb) / .8)}
 
 .btn-sm{padding:11px 18px;font-size:.84rem;min-height:44px;border-radius:11px}
 .btn-block{width:100%}
@@ -99,10 +113,10 @@ h1,h2,h3,h4,h5,h6{font-family:var(--brand-font-display);font-weight:700;letter-s
 
 /* ---------- Glass panel ---------- */
 .glass-panel{position:relative;border-radius:26px;
-  background:linear-gradient(168deg,rgb(255 255 255 / .94),rgb(255 255 255 / .84));
+  background:linear-gradient(168deg,rgb(var(--brand-surface-rgb) / .94),rgb(var(--brand-surface-rgb) / .84));
   backdrop-filter:blur(26px) saturate(1.3);-webkit-backdrop-filter:blur(26px) saturate(1.3);
-  border:1px solid rgb(255 255 255 / .7);
-  box-shadow:0 44px 90px -28px rgb(var(--brand-abyss-rgb) / .65),inset 0 1px 0 rgb(255 255 255 / .9)}
+  border:1px solid rgb(var(--brand-surface-rgb) / .7);
+  box-shadow:0 44px 90px -28px rgb(var(--brand-abyss-rgb) / .65),inset 0 1px 0 rgb(var(--brand-surface-rgb) / .9)}
 .glass-panel::before{content:"";position:absolute;top:0;left:24px;right:24px;height:3px;
   border-radius:0 0 4px 4px;
   background:linear-gradient(90deg,var(--brand-accent-soft),var(--brand-accent) 40%,var(--brand-accent-deep))}

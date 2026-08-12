@@ -96,7 +96,7 @@ const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
 <style>
   .inv-head {
     background: linear-gradient(180deg, var(--brand-night), var(--brand-abyss));
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     padding: 56px 0 48px;
   }
   @media (min-width: 900px) {
@@ -138,13 +138,13 @@ const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid rgb(255 255 255 / 0.2);
+    border: 1px solid rgb(var(--brand-on-dark-strong-rgb) / 0.2);
     border-radius: var(--brand-radius-pill);
     padding: 10px 16px;
     font-family: var(--brand-font-display);
     font-weight: 700;
     font-size: 0.86rem;
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     transition:
       border-color 0.25s,
       background 0.25s;

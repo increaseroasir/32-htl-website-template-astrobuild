@@ -689,7 +689,7 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
   }
   .sx-announce-badge {
     background: var(--brand-urgent);
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     font-family: var(--brand-font-mono);
     font-size: 0.62rem;
     letter-spacing: 0.1em;
@@ -753,7 +753,7 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
     color: var(--brand-ink);
     border-radius: var(--brand-radius-card);
     padding: 1.4rem 1.4rem 1.6rem;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 24px 60px rgb(var(--brand-abyss-rgb) / 0.35);
   }
   .sx-card-h {
     font-family: var(--brand-font-display);
@@ -856,7 +856,7 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
     position: relative;
     padding: 1rem 1.1rem;
     margin-top: 120px;
-    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
+    background: linear-gradient(180deg, transparent, rgb(var(--brand-abyss-rgb) / 0.75));
   }
   .sx-imagecard-body h3 {
     font-family: var(--brand-font-mono);
@@ -903,7 +903,7 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
     height: 30px;
     border-radius: 50%;
     background: var(--brand-primary);
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     display: grid;
     place-items: center;
     font-weight: 700;
@@ -958,7 +958,7 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
   }
   .sx-compare-them {
     background: var(--brand-primary);
-    color: #fff;
+    color: var(--brand-on-dark-strong);
   }
   .sx-compare tbody th {
     background: var(--brand-surface);

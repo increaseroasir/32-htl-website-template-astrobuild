@@ -307,7 +307,7 @@ Proven to catch each of these by reintroducing them one at a time:
 |---|---|
 | Admin link back in the public footer | `No /admin link in any component` |
 | `product.category === 'hot-tub'` in a component | `No category slugs hardcoded outside src/config` |
-| A brand hex typed into a component | `No brand colour literals outside src/config` |
+| A brand hex typed into a component | `No brand colour literals outside src/config` — the only permitted literals are the two whitelisted material greys of the image-placeholder gradient |
 | Two labels for one destination | `One label per destination` |
 | `src="assets/logo.png"` | `No relative asset paths` |
 | Phone rendered as text, not a `tel:` link | `Every phone is a tel: link` |

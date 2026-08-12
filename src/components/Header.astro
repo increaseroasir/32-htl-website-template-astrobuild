@@ -130,7 +130,7 @@ const cta = site.nav.primaryCta;
     top: 0;
     z-index: 80;
     border-bottom: 1px solid rgb(var(--brand-deep-rgb) / 0.1);
-    background: rgb(255 255 255 / 0.85);
+    background: rgb(var(--brand-surface-rgb) / 0.85);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
@@ -270,7 +270,7 @@ const cta = site.nav.primaryCta;
     background:
       radial-gradient(1000px 700px at 85% -10%, rgb(var(--brand-primary-rgb) / 0.55), transparent 60%),
       linear-gradient(180deg, var(--brand-night), var(--brand-abyss));
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     padding: 22px 20px calc(34px + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
@@ -303,9 +303,9 @@ const cta = site.nav.primaryCta;
     height: 48px;
     width: 48px;
     border-radius: 12px;
-    border: 1px solid rgb(255 255 255 / 0.3);
+    border: 1px solid rgb(var(--brand-on-dark-strong-rgb) / 0.3);
     background: transparent;
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     font-size: 1.4rem;
     cursor: pointer;
   }
@@ -316,9 +316,9 @@ const cta = site.nav.primaryCta;
     font-family: var(--brand-font-display);
     font-weight: 700;
     font-size: 1.4rem;
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     padding: 16px 0;
-    border-bottom: 1px solid rgb(255 255 255 / 0.09);
+    border-bottom: 1px solid rgb(var(--brand-on-dark-strong-rgb) / 0.09);
     transition:
       padding-left 0.25s var(--ease-out),
       color 0.25s;

@@ -50,6 +50,10 @@ for (const [name, hex] of Object.entries(c)) {
 
 // Derived hairline — one colour at an opacity, never a second token.
 declarations.push(`--brand-line:rgb(${toRgbTriplet(c.deep)} / .12)`);
+// Derived INTERACTIVE border (N-04): selectable controls need >=3:1 against
+// the surface; the 12% hairline is decoration-only. Same colour, stronger
+// stop — deep at 50% composites to ~3.1:1 on white.
+declarations.push(`--brand-line-strong:rgb(${toRgbTriplet(c.deep)} / .5)`);
 declarations.push(`--brand-line-strong:rgb(${toRgbTriplet(c.deep)} / .2)`);
 
 declarations.push(`--brand-font-display:${f.display}`);

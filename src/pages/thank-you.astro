@@ -42,7 +42,7 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 <style>
   .ty {
     background: linear-gradient(180deg, var(--brand-night), var(--brand-abyss));
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     padding: 72px 0 88px;
     min-height: 60vh;
   }
@@ -50,7 +50,7 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
   .ty h1 { font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: -0.02em; line-height: 1.06; }
   .ty-sub { margin-top: 16px; max-width: 56ch; color: var(--brand-on-dark); line-height: 1.65; }
   .ty-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-  .ty-visit { margin-top: 48px; padding-top: 28px; border-top: 1px solid rgb(255 255 255 / 0.12); }
+  .ty-visit { margin-top: 48px; padding-top: 28px; border-top: 1px solid rgb(var(--brand-on-dark-strong-rgb) / 0.12); }
   .ty-visit h2 {
     font-family: var(--brand-font-mono); font-size: 0.66rem; font-weight: 600;
     letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-accent-soft);
@@ -58,6 +58,6 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
   }
   .ty-visit p { color: var(--brand-on-dark); }
   .ty-visit ul { list-style: none; margin-top: 10px; font-size: 0.88rem; color: var(--brand-on-dark-muted); }
-  .ty-visit ul span { color: #fff; font-weight: 600; }
+  .ty-visit ul span { color: var(--brand-on-dark-strong); font-weight: 600; }
   .ty-directions { display: inline-block; margin-top: 14px; color: var(--brand-accent); text-decoration: underline; }
 </style>
