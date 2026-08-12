@@ -15,6 +15,9 @@ import { site, derived, enabledCategories } from './src/config';
 // not sell, no CTA) fails `npm run build` rather than surfacing as a runtime
 // error on the first paid click.
 import { landings } from './src/config/landings';
+// Operator-only routes, one list (C10). The sitemap filter below reads it,
+// the gate enforces that it keeps doing so.
+import { INTERNAL_ROUTES } from './src/config/internal-routes';
 
 /**
  * Writes the resolved config to dist/gate-manifest.json at the end of every
@@ -132,7 +135,13 @@ export default defineConfig({
       // /lp/ is paid-only: indexed, a landing page competes with the real
       // site for its own keywords and collects organic traffic the client is
       // already paying to reach.
-      filter: (page) => !page.includes('/admin') && !page.includes('/lp/'),
+      // INTERNAL_ROUTES (e.g. /proof) are the operator's own screens: a
+      // sitemap entry would advertise a diagnostic page to every crawler on
+      // deploy day (L-01).
+      filter: (page) =>
+        !page.includes('/admin') &&
+        !page.includes('/lp/') &&
+        !INTERNAL_ROUTES.some((route) => page.includes(route)),
       // In SSR the sitemap only sees prerendered routes, so the dynamic
       // [category] pages have to be declared. They are declared FROM the
       // enabled-categories array, which means a category the client does not

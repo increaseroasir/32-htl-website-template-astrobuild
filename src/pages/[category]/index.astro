@@ -16,7 +16,7 @@ import CategoryHero from '../../components/CategoryHero.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { findCategoryBySegment } from '../../config/categories';
-import { enabledCategories, isCategoryEnabled, site } from '../../config';
+import { enabledCategories, isCategoryEnabled, site, derived } from '../../config';
 import { getDb, listProducts, inventoryStatus } from '../../lib/db';
 import { buildItemList } from '../../lib/seo';
 
@@ -91,6 +91,11 @@ const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site
           <div class="empty">
             <h2>Inventory isn't connected yet</h2>
             <p>{dbStatus.customerMessage}</p>
+            <p class="empty-actions">
+              <a class="btn btn-gold" href={derived.telHref}>
+                Call {derived.phoneDisplay}
+              </a>
+            </p>
           </div>
         ) : products.length === 0 ? (
           <div class="empty">

@@ -336,7 +336,41 @@ async function sourceChecks() {
     pass('No operator diagnostics in customer pages');
   }
 
-  // --- 6. D1 migrations configured ---------------------------------
+  // --- 6. Internal routes are delisted ------------------------------
+  // The operator's diagnostic pages live in ONE list
+  // (src/config/internal-routes.ts); the sitemap filter must read it and
+  // the list must name /proof. If either stops being true, a re-listed
+  // internal route reaches every crawler on the next deploy (L-01).
+  const internalRoutesFile = join(ROOT, 'src', 'config', 'internal-routes.ts');
+  const configFile = join(ROOT, 'astro.config.ts');
+  let internalRoutesBody = '';
+  let astroConfigBody = '';
+  try {
+    internalRoutesBody = stripComments(await readFile(internalRoutesFile, 'utf8'));
+  } catch {
+    /* missing file caught below */
+  }
+  try {
+    astroConfigBody = stripComments(await readFile(configFile, 'utf8'));
+  } catch {
+    /* astro.config.ts missing only in synthetic fixtures */
+  }
+  const routeEntries = [...internalRoutesBody.matchAll(/'(\/[^']*)'/g)].map((m) => m[1]);
+  if (!routeEntries.includes('/proof')) {
+    fail(
+      'Internal routes are delisted',
+      "src/config/internal-routes.ts must list '/proof' — it is an unauthenticated diagnostic page.",
+    );
+  } else if (astroConfigBody && !/INTERNAL_ROUTES/.test(astroConfigBody)) {
+    fail(
+      'Internal routes are delisted',
+      'astro.config.ts no longer reads INTERNAL_ROUTES — the sitemap filter is unwired.',
+    );
+  } else {
+    pass('Internal routes are delisted', routeEntries.join(', '));
+  }
+
+  // --- 7. D1 migrations configured ---------------------------------
   // A schema change on a live client database is impossible without a
   // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
   // tables entirely, so an edit to schema.sql never reaches a client.
@@ -650,6 +684,19 @@ async function renderedChecks(m) {
       const xml = await readFile(sitemapPath, 'utf8');
       if (xml.includes('/admin')) fail('Sitemap excludes admin', 'found /admin');
       else pass('Sitemap excludes admin');
+
+      // Rendered half of 'Internal routes are delisted' (C10): the BUILT
+      // sitemap must not advertise any INTERNAL_ROUTES entry. Runs in
+      // phase-end/full gates today; harness fixture lands at AL-3.
+      try {
+        const internalSrc = await readFile(join(ROOT, 'src', 'config', 'internal-routes.ts'), 'utf8');
+        const internalEntries = [...internalSrc.matchAll(/'(\/[^']*)'/g)].map((mm) => mm[1]);
+        const listed = internalEntries.filter((route) => xml.includes(route));
+        if (listed.length) fail('Sitemap excludes internal routes', listed.join(', '));
+        else pass('Sitemap excludes internal routes', internalEntries.join(', '));
+      } catch {
+        fail('Sitemap excludes internal routes', 'src/config/internal-routes.ts unreadable');
+      }
 
       const disabled = ['saunas', 'massage-chairs', 'cold-plunges'].filter(
         (seg) => !m.categories.some((c) => c.segment === seg) && xml.includes(`/${seg}`),

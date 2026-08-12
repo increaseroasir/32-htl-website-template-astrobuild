@@ -66,6 +66,11 @@ const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
         <div class="empty">
           <h2>Inventory isn't connected yet</h2>
           <p>{dbStatus.customerMessage}</p>
+          <p class="empty-actions">
+            <a class="btn btn-gold" href={derived.telHref}>
+              Call {derived.phoneDisplay}
+            </a>
+          </p>
         </div>
       ) : products.length === 0 ? (
         <div class="empty">

@@ -8,3 +8,12 @@
 /admin/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: private, no-store
+
+# Internal diagnostics (src/config/internal-routes.ts). No auth, so the
+# fence is structural: never indexed, never cached, never in the sitemap.
+/proof
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store
+/proof/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store

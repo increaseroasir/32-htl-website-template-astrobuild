@@ -303,6 +303,25 @@ test('PASSES on the two whitelisted material neutrals', async () => {
 });
 
 /**
+ * A re-listed internal route (C10 / L-01). The fixture empties
+ * INTERNAL_ROUTES; the check must refuse — an unauthenticated diagnostic
+ * page with no /proof entry is one sitemap regeneration from public.
+ */
+test('FAILS when INTERNAL_ROUTES no longer lists /proof', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    await writeFile(
+      join(dir, 'src', 'config', 'internal-routes.ts'),
+      `export const INTERNAL_ROUTES = [] as const;\n`,
+    );
+  });
+  assertFails(run, 'Internal routes are delisted');
+});
+
+test('PASSES with /proof listed and the sitemap filter wired', async () => {
+  assertPasses(await withFixture(null), 'Internal routes are delisted');
+});
+
+/**
  * Operator diagnostics on a customer page (C9 / the H-area root cause).
  * The fixture adds a page interpolating operatorDetail; the check must
  * name it, and must NOT fire on proof.astro (the operator's own screen)
