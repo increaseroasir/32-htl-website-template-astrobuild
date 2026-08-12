@@ -55,17 +55,14 @@
   "brand": {
     "colors": {
       "primary": "#1F5D46",
-      "primaryMid": "#174838",
-      "deep": "#10352A",
-      "night": "#0A241C",
-      "abyss": "#051410",
       "accent": "#C97B3F",
-      "accentSoft": "#E0A472",
-      "accentDeep": "#A8622C",
-      "accentDark": "#6E3F18",
-      "accentLift": "#E8B98D",
-      "accentPress": "#B26A31",
-      "accentGlow": "#F3D8BC"
+      "overrides": {
+        "accentSoft": "#E0A472",
+        "accentDeep": "#A8622C",
+        "accentLift": "#E8B98D",
+        "accentPress": "#B26A31",
+        "accentGlow": "#F3D8BC"
+      }
     },
     "logos": {
       "nav": "https://example.com/brand/northline-nav.svg",

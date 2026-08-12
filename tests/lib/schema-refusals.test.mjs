@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { clientConfigSchema } from '../../src/config/schema.ts';
 import { rawClientConfig } from '../../src/config/client.config.ts';
+import { buildRamp } from '../../src/config/ramp.ts';
 
 const clone = () => structuredClone(rawClientConfig);
 
@@ -19,8 +20,9 @@ test('the shipped template config parses (baseline)', () => {
 
 test('the two new tokens exist and are hex', () => {
   const parsed = clientConfigSchema.parse(clone());
-  assert.match(parsed.brand.colors.onDarkStrong, /^#[0-9A-Fa-f]{6}$/);
-  assert.match(parsed.brand.colors.inkLift, /^#[0-9A-Fa-f]{6}$/);
+  const tokens = { ...buildRamp(parsed.brand.colors), ...parsed.brand.colors.overrides };
+  assert.match(tokens.onDarkStrong, /^#[0-9A-Fa-f]{6}$/);
+  assert.match(tokens.inkLift, /^#[0-9A-Fa-f]{6}$/);
 });
 
 test('REFUSED: sentry enabled with no SDK wired', () => {

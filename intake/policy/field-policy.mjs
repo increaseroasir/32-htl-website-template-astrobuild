@@ -63,30 +63,11 @@ export const DERIVED_NEVER_ASK = [
 ];
 
 /* The navy + gold ramp, used as the pre-filled default for every new client. */
+// The three ramp inputs. The other twenty tokens are DERIVED (src/config/ramp.ts).
 const D = {
   primary: '#16469B',
-  primaryMid: '#0F327A',
-  deep: '#0B2559',
-  night: '#06183D',
-  abyss: '#030C20',
   accent: '#FFB81C',
-  accentSoft: '#FFCB57',
-  accentDeep: '#E8A400',
-  accentDark: '#8F6400',
-  accentLift: '#FFD46A',
-  accentPress: '#F0A400',
-  accentGlow: '#FFE29A',
   urgent: '#D7261E',
-  urgentLight: '#E8382F',
-  urgentDark: '#B71E17',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F8F4EC',
-  ink: '#141927',
-  inkMuted: '#4A5268',
-  onDark: '#C6D4EF',
-  onDarkMuted: '#8FA6D2',
-  onDarkStrong: '#FFFFFF',
-  inkLift: '#2A3244',
 };
 
 const color = (key, label, help) => ({
@@ -260,28 +241,22 @@ export const FIELD_POLICY = {
 
   /* ---------------- brand: colours ---------------- */
   'brand.colors.primary': color('primary', 'Primary', 'The main brand colour.'),
-  'brand.colors.primaryMid': color('primaryMid', 'Primary — mid'),
-  'brand.colors.deep': color('deep', 'Primary — deep', 'Hairline borders are derived from this at 12% opacity.'),
-  'brand.colors.night': color('night', 'Primary — night'),
-  'brand.colors.abyss': color('abyss', 'Primary — darkest', 'Base of the hero gradient.'),
   'brand.colors.accent': color('accent', 'Accent', 'The call-to-action colour.'),
-  'brand.colors.accentSoft': color('accentSoft', 'Accent — soft', 'Headings on dark backgrounds.'),
-  'brand.colors.accentDeep': color('accentDeep', 'Accent — deep'),
-  'brand.colors.accentDark': color('accentDark', 'Accent — dark', 'Accent text on light backgrounds. Must stay contrast-safe.'),
-  'brand.colors.accentLift': color('accentLift', 'Accent — gradient top'),
-  'brand.colors.accentPress': color('accentPress', 'Accent — gradient bottom'),
-  'brand.colors.accentGlow': color('accentGlow', 'Accent — glow'),
   'brand.colors.urgent': color('urgent', 'Urgency'),
-  'brand.colors.urgentLight': color('urgentLight', 'Urgency — gradient top'),
-  'brand.colors.urgentDark': color('urgentDark', 'Urgency — gradient bottom'),
-  'brand.colors.surface': color('surface', 'Page background'),
-  'brand.colors.surfaceAlt': color('surfaceAlt', 'Alternate band background'),
-  'brand.colors.ink': color('ink', 'Body text'),
-  'brand.colors.inkMuted': color('inkMuted', 'Secondary text'),
-  'brand.colors.onDark': color('onDark', 'Text on dark'),
-  'brand.colors.onDarkMuted': color('onDarkMuted', 'Secondary text on dark'),
-  'brand.colors.onDarkStrong': color('onDarkStrong', 'Full-strength text on dark', 'Headlines and icons on dark panels. Usually pure white.'),
-  'brand.colors.inkLift': color('inkLift', 'Ink — lifted', 'Gradient top over ink-dark surfaces (e.g. the sold pill).'),
+  'brand.colors.overrides': {
+    source: 'default',
+    group: 'brand',
+    label: 'Derived-token overrides',
+    help: 'The other twenty tokens are derived from the three above (ramp.ts). Any of them may be pinned here by hand — metallic golds and some brand reds resist arithmetic — and a pinned value wins.',
+    example: {},
+  },
+  'brand.colors.overrides{}': {
+    source: 'default',
+    group: 'brand',
+    control: 'color',
+    label: 'Pinned token value',
+    example: null,
+  },
 
   /* ---------------- brand: type, logos, radius ---------------- */
   'brand.fonts.display': {

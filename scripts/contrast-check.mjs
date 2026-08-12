@@ -15,13 +15,17 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Pull the hex values straight out of client.config.ts — no second copy.
+// Pull the three ramp inputs straight out of client.config.ts — no second
+// copy — and derive the rest exactly the way the build does.
+const { buildRamp } = await import(join(ROOT, 'src', 'config', 'ramp.ts'));
 const config = await readFile(join(ROOT, 'src', 'config', 'client.config.ts'), 'utf8');
-const colorOf = (key) => {
+const input = (key) => {
   const m = config.match(new RegExp(`${key}:\\s*'(#[0-9a-fA-F]{6})'`));
-  if (!m) throw new Error(`token ${key} not found in client.config.ts`);
+  if (!m) throw new Error(`ramp input ${key} not found in client.config.ts`);
   return m[1];
 };
+const tokens = buildRamp({ primary: input('primary'), accent: input('accent'), urgent: input('urgent') });
+const colorOf = (key) => tokens[key];
 
 function luminance(hex) {
   const c = hex.replace('#', '');

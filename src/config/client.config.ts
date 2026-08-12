@@ -85,30 +85,12 @@ export const rawClientConfig: ClientConfigInput = {
    * ported from the reference build. Swap freely per client.
    */
   brand: {
+    // Three decisions; the other twenty tokens are derived in ramp.ts
+    // (ΔE2000 ≤ 0.18 against the hand-tuned ramp these replaced).
     colors: {
-      primary: '#16469B',
-      primaryMid: '#0F327A',
-      deep: '#0B2559',
-      night: '#06183D',
-      abyss: '#030C20',
-      accent: '#FFB81C',
-      accentSoft: '#FFCB57',
-      accentDeep: '#E8A400',
-      accentDark: '#8F6400',
-      accentLift: '#FFD46A',
-      accentPress: '#F0A400',
-      accentGlow: '#FFE29A',
-      urgent: '#D7261E',
-      urgentLight: '#E8382F',
-      urgentDark: '#B71E17',
-      surface: '#FFFFFF',
-      surfaceAlt: '#F8F4EC',
-      ink: '#141927',
-      inkMuted: '#4A5268',
-      onDark: '#C6D4EF',
-      onDarkMuted: '#8FA6D2',
-      onDarkStrong: '#FFFFFF',
-      inkLift: '#2A3244',
+      primary: '#16469B', // navy
+      accent: '#FFB81C', // gold
+      urgent: '#D7261E', // red
     },
     fonts: {
       display: "'Bricolage Grotesque', system-ui, sans-serif",

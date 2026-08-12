@@ -20,6 +20,7 @@
 import { clientConfigSchema, type ClientConfig, type NavItem } from './schema';
 import { CATEGORY_CATALOG, type CategoryDefinition, type CategorySlug } from './categories';
 import { rawClientConfig } from './client.config';
+import { buildRamp, type BrandTokens } from './ramp';
 
 /* ------------------------------------------------------------------ */
 /* Validate once, at build time. A bad config fails the build.         */
@@ -37,7 +38,17 @@ if (!parsed.success) {
   );
 }
 
-export const site: ClientConfig = parsed.data;
+/** The validated config, with the colour ramp expanded from its three inputs. */
+type SiteConfig = Omit<ClientConfig, 'brand'> & {
+  brand: Omit<ClientConfig['brand'], 'colors'> & { colors: BrandTokens };
+};
+export const site: SiteConfig = {
+  ...parsed.data,
+  brand: {
+    ...parsed.data.brand,
+    colors: { ...buildRamp(parsed.data.brand.colors), ...parsed.data.brand.colors.overrides },
+  },
+};
 
 /* ------------------------------------------------------------------ */
 /* Resolved categories                                                 */

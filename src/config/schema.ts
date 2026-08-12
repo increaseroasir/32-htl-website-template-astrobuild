@@ -17,6 +17,7 @@
 import { z } from 'zod';
 import { CATEGORY_SLUGS } from './categories';
 import { sectionSchema, collectFootnotes } from './sections.schema';
+import { buildRamp, checkRampContrast, OVERRIDE_TOKENS } from './ramp';
 
 /* ------------------------------------------------------------------ */
 /* Primitives                                                          */
@@ -66,50 +67,29 @@ export const DAYS = [
 
 const brandSchema = z.object({
   /**
-   * Colour ramp. These become CSS custom properties at build time.
-   * NO component may contain a hex code — it reads var(--brand-*) instead.
-   * Client B changes these nine values and gets a different-looking site.
+   * Colour ramp: THREE decisions. The other twenty tokens are arithmetic
+   * (fixed OKLCH steps — see ramp.ts, verified ΔE2000 ≤ 0.18 against the
+   * hand-tuned ramp this replaced). They become CSS custom properties at
+   * build time; NO component may contain a hex code — it reads var(--brand-*).
+   *
+   * `overrides` is the escape hatch: any derived token may be pinned by hand
+   * (metallic golds and some brand reds resist arithmetic), and overrides
+   * win. The input-driven AA pairs are checked at parse — a colour that
+   * cannot carry its text REFUSES the build, naming the nearest one that can.
    */
-  colors: z.object({
-    // --- Primary ramp (Sun Pool: navy) ---
-    primary: hexColor, // --navy-royal
-    primaryMid: hexColor, // --navy-mid
-    deep: hexColor, // --navy-deep
-    night: hexColor, // --navy-night
-    abyss: hexColor, // --navy-abyss, hero base
-
-    // --- Accent ramp (Sun Pool: gold). The three gradient stops are real
-    // tokens, not literals in a stylesheet, so a client with a different
-    // accent still gets a correct button gradient from config alone. ---
-    accent: hexColor, // --gold, the CTA colour
-    accentSoft: hexColor, // --gold-soft, headings on dark
-    accentDeep: hexColor, // --gold-deep
-    accentDark: hexColor, // --gold-dark, accent text on light (contrast-safe)
-    accentLift: hexColor, // top stop of the CTA gradient
-    accentPress: hexColor, // bottom stop of the CTA gradient
-    accentGlow: hexColor, // lightest stop, gradient accent text
-
-    // --- Urgency ramp ---
-    urgent: hexColor,
-    urgentLight: hexColor, // top stop of the red gradient
-    urgentDark: hexColor, // bottom stop of the red gradient
-
-    // --- Neutrals ---
-    surface: hexColor, // page background
-    surfaceAlt: hexColor, // alternating band background (--sand)
-    ink: hexColor, // body text on light
-    inkMuted: hexColor, // secondary text on light (--ink-soft)
-    onDark: hexColor, // body text on dark
-    onDarkMuted: hexColor, // secondary text on dark
-    onDarkStrong: hexColor, // FULL-strength text/icons on dark (C-02): the
-    // 25 hand-typed #fff literals existed because this word was missing.
-    inkLift: hexColor, // lifted ink — gradient top over `ink` surfaces
-    // (sold-pill top stop, C-03). Not a neutral: pairs with `ink`.
-
-    // NOTE: there is no `line` token. Hairline borders are DERIVED from
-    // `deep` at 12% alpha, because that is what they are — one colour at an
-    // opacity, not a second colour that could drift out of step with it.
-  }),
+  colors: z
+    .object({
+      primary: hexColor,
+      accent: hexColor, // the CTA colour
+      urgent: hexColor,
+      overrides: z.partialRecord(z.enum(OVERRIDE_TOKENS), hexColor).default({}),
+    })
+    .superRefine((v, ctx) => {
+      const tokens = { ...buildRamp(v), ...v.overrides };
+      for (const issue of checkRampContrast(tokens)) {
+        ctx.addIssue({ code: 'custom', path: [issue.input], message: issue.message });
+      }
+    }),
 
   /** Font families. Loaded once in the base layout, referenced by token. */
   fonts: z.object({

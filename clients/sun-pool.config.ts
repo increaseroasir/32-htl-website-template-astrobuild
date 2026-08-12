@@ -75,30 +75,12 @@ export const rawClientConfig: ClientConfigInput = {
 
   // The navy + gold ramp, lifted from the live site's theme.css.
   brand: {
+    // Same palette as before, expressed as its three decisions — the other
+    // twenty tokens are derived in ramp.ts (ΔE2000 ≤ 0.18, nothing moved).
     colors: {
       primary: '#16469B', // --navy-royal
-      primaryMid: '#0F327A', // --navy-mid
-      deep: '#0B2559', // --navy-deep
-      night: '#06183D', // --navy-night
-      abyss: '#030C20', // --navy-abyss
       accent: '#FFB81C', // --gold
-      accentSoft: '#FFCB57', // --gold-soft
-      accentDeep: '#E8A400', // --gold-deep
-      accentDark: '#8F6400', // --gold-dark
-      accentLift: '#FFD46A', // gold gradient top stop
-      accentPress: '#F0A400', // gold gradient bottom stop
-      accentGlow: '#FFE29A', // .deg accent-text gradient start
       urgent: '#D7261E', // --red
-      urgentLight: '#E8382F', // red gradient top stop
-      urgentDark: '#B71E17', // red gradient bottom stop
-      surface: '#FFFFFF',
-      surfaceAlt: '#F8F4EC', // --sand
-      ink: '#141927', // --ink
-      inkMuted: '#4A5268', // --ink-soft
-      onDark: '#C6D4EF',
-      onDarkMuted: '#8FA6D2',
-      onDarkStrong: '#FFFFFF',
-      inkLift: '#2A3244',
     },
     fonts: {
       display: "'Bricolage Grotesque', system-ui, sans-serif",

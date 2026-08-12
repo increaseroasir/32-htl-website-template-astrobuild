@@ -70,9 +70,9 @@
     }
   ],
   "counts": {
-    "total": 97,
+    "total": 79,
     "ask": 46,
-    "default": 40,
+    "default": 22,
     "fixed": 3,
     "composed": 8
   },
@@ -644,68 +644,6 @@
       "example": "#16469B"
     },
     {
-      "path": "brand.colors.primaryMid",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Primary — mid",
-      "control": "color",
-      "example": "#0F327A"
-    },
-    {
-      "path": "brand.colors.deep",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Primary — deep",
-      "help": "Hairline borders are derived from this at 12% opacity.",
-      "control": "color",
-      "example": "#0B2559"
-    },
-    {
-      "path": "brand.colors.night",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Primary — night",
-      "control": "color",
-      "example": "#06183D"
-    },
-    {
-      "path": "brand.colors.abyss",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Primary — darkest",
-      "help": "Base of the hero gradient.",
-      "control": "color",
-      "example": "#030C20"
-    },
-    {
       "path": "brand.colors.accent",
       "type": "string",
       "required": true,
@@ -720,98 +658,6 @@
       "help": "The call-to-action colour.",
       "control": "color",
       "example": "#FFB81C"
-    },
-    {
-      "path": "brand.colors.accentSoft",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — soft",
-      "help": "Headings on dark backgrounds.",
-      "control": "color",
-      "example": "#FFCB57"
-    },
-    {
-      "path": "brand.colors.accentDeep",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — deep",
-      "control": "color",
-      "example": "#E8A400"
-    },
-    {
-      "path": "brand.colors.accentDark",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — dark",
-      "help": "Accent text on light backgrounds. Must stay contrast-safe.",
-      "control": "color",
-      "example": "#8F6400"
-    },
-    {
-      "path": "brand.colors.accentLift",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — gradient top",
-      "control": "color",
-      "example": "#FFD46A"
-    },
-    {
-      "path": "brand.colors.accentPress",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — gradient bottom",
-      "control": "color",
-      "example": "#F0A400"
-    },
-    {
-      "path": "brand.colors.accentGlow",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Accent — glow",
-      "control": "color",
-      "example": "#FFE29A"
     },
     {
       "path": "brand.colors.urgent",
@@ -829,22 +675,43 @@
       "example": "#D7261E"
     },
     {
-      "path": "brand.colors.urgentLight",
-      "type": "string",
-      "required": true,
+      "path": "brand.colors.overrides",
+      "type": "record",
+      "required": false,
       "nullable": false,
+      "default": {},
       "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
+        "keys": [
+          "primaryMid",
+          "deep",
+          "night",
+          "abyss",
+          "accentGlow",
+          "accentLift",
+          "accentSoft",
+          "accentPress",
+          "accentDeep",
+          "accentDark",
+          "urgentLight",
+          "urgentDark",
+          "surface",
+          "surfaceAlt",
+          "onDarkStrong",
+          "ink",
+          "inkLift",
+          "inkMuted",
+          "onDark",
+          "onDarkMuted"
+        ]
       },
       "source": "default",
       "group": "brand",
-      "label": "Urgency — gradient top",
-      "control": "color",
-      "example": "#E8382F"
+      "label": "Derived-token overrides",
+      "help": "The other twenty tokens are derived from the three above (ramp.ts). Any of them may be pinned here by hand — metallic golds and some brand reds resist arithmetic — and a pinned value wins.",
+      "example": {}
     },
     {
-      "path": "brand.colors.urgentDark",
+      "path": "brand.colors.overrides{}",
       "type": "string",
       "required": true,
       "nullable": false,
@@ -854,131 +721,9 @@
       },
       "source": "default",
       "group": "brand",
-      "label": "Urgency — gradient bottom",
+      "label": "Pinned token value",
       "control": "color",
-      "example": "#B71E17"
-    },
-    {
-      "path": "brand.colors.surface",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Page background",
-      "control": "color",
-      "example": "#FFFFFF"
-    },
-    {
-      "path": "brand.colors.surfaceAlt",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Alternate band background",
-      "control": "color",
-      "example": "#F8F4EC"
-    },
-    {
-      "path": "brand.colors.ink",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Body text",
-      "control": "color",
-      "example": "#141927"
-    },
-    {
-      "path": "brand.colors.inkMuted",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Secondary text",
-      "control": "color",
-      "example": "#4A5268"
-    },
-    {
-      "path": "brand.colors.onDark",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Text on dark",
-      "control": "color",
-      "example": "#C6D4EF"
-    },
-    {
-      "path": "brand.colors.onDarkMuted",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Secondary text on dark",
-      "control": "color",
-      "example": "#8FA6D2"
-    },
-    {
-      "path": "brand.colors.onDarkStrong",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Full-strength text on dark",
-      "help": "Headlines and icons on dark panels. Usually pure white.",
-      "control": "color",
-      "example": "#FFFFFF"
-    },
-    {
-      "path": "brand.colors.inkLift",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "pattern": "^#[0-9a-fA-F]{6}$",
-        "format": "regex"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Ink — lifted",
-      "help": "Gradient top over ink-dark surfaces (e.g. the sold pill).",
-      "control": "color",
-      "example": "#2A3244"
+      "example": null
     },
     {
       "path": "brand.fonts.display",
