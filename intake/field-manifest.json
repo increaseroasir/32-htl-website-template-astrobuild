@@ -70,9 +70,9 @@
     }
   ],
   "counts": {
-    "total": 93,
-    "ask": 44,
-    "default": 38,
+    "total": 97,
+    "ask": 46,
+    "default": 40,
     "fixed": 3,
     "composed": 8
   },
@@ -949,6 +949,38 @@
       "example": "#8FA6D2"
     },
     {
+      "path": "brand.colors.onDarkStrong",
+      "type": "string",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "format": "regex"
+      },
+      "source": "default",
+      "group": "brand",
+      "label": "Full-strength text on dark",
+      "help": "Headlines and icons on dark panels. Usually pure white.",
+      "control": "color",
+      "example": "#FFFFFF"
+    },
+    {
+      "path": "brand.colors.inkLift",
+      "type": "string",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "format": "regex"
+      },
+      "source": "default",
+      "group": "brand",
+      "label": "Ink — lifted",
+      "help": "Gradient top over ink-dark surfaces (e.g. the sold pill).",
+      "control": "color",
+      "example": "#2A3244"
+    },
+    {
       "path": "brand.fonts.display",
       "type": "string",
       "required": true,
@@ -1443,6 +1475,32 @@
       "help": "REQUIRED if financing is offered. The qualifying terms — \"on approved credit\", who the offer applies to, what expires when. An offer stated without its terms is the claim regulators care about.",
       "control": "textarea",
       "example": null
+    },
+    {
+      "path": "display.showPrice",
+      "type": "boolean",
+      "required": false,
+      "nullable": false,
+      "default": true,
+      "source": "ask",
+      "group": "financing",
+      "label": "Show cash prices",
+      "help": "Off shows \"Ask for current pricing\" instead of a number. A price shown is a claim; some dealers may not publish one.",
+      "control": "checkbox",
+      "example": true
+    },
+    {
+      "path": "display.showMonthly",
+      "type": "boolean",
+      "required": false,
+      "nullable": false,
+      "default": false,
+      "source": "ask",
+      "group": "financing",
+      "label": "Show monthly payments",
+      "help": "A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.",
+      "control": "checkbox",
+      "example": false
     },
     {
       "path": "homepage.title",

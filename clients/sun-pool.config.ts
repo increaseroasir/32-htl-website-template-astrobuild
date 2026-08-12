@@ -97,6 +97,8 @@ export const rawClientConfig: ClientConfigInput = {
       inkMuted: '#4A5268', // --ink-soft
       onDark: '#C6D4EF',
       onDarkMuted: '#8FA6D2',
+      onDarkStrong: '#FFFFFF',
+      inkLift: '#2A3244',
     },
     fonts: {
       display: "'Bricolage Grotesque', system-ui, sans-serif",

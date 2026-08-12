@@ -101,6 +101,10 @@ const brandSchema = z.object({
     inkMuted: hexColor, // secondary text on light (--ink-soft)
     onDark: hexColor, // body text on dark
     onDarkMuted: hexColor, // secondary text on dark
+    onDarkStrong: hexColor, // FULL-strength text/icons on dark (C-02): the
+    // 25 hand-typed #fff literals existed because this word was missing.
+    inkLift: hexColor, // lifted ink — gradient top over `ink` surfaces
+    // (sold-pill top stop, C-03). Not a neutral: pairs with `ink`.
 
     // NOTE: there is no `line` token. Hairline borders are DERIVED from
     // `deep` at 12% alpha, because that is what they are — one colour at an
@@ -441,6 +445,38 @@ export const clientConfigSchema = z
     integrations: integrationsSchema,
   })
   .superRefine((cfg, ctx) => {
+    // Sentry is declared in config but NO SDK is wired in this template
+    // version (K-07/K-08). Turning it on would publish a false disclosure
+    // in the privacy policy — "we use error monitoring" — about monitoring
+    // that does not exist. Refused at build until AL-15 installs or
+    // deletes it.
+    if (cfg.integrations.sentry.enabled) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['integrations', 'sentry', 'enabled'],
+        message:
+          'Sentry is not wired in this template version — keep it false (the privacy policy ' +
+          'would publish a false disclosure). Install the SDK or delete the flag (AL-15).',
+      });
+    }
+
+    // Nav may not link to /financing when there is no financing block —
+    // the route 404s (O-17). Same fence as the disabled-category check
+    // below, for the same reason.
+    if (cfg.financing === null) {
+      for (const [i, item] of cfg.nav.items.entries()) {
+        if (item.type === 'link' && item.href === '/financing') {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['nav', 'items', i, 'href'],
+            message:
+              'Nav links to /financing but financing is null, so that page does not exist. ' +
+              'Fill in the financing block, or remove the nav link.',
+          });
+        }
+      }
+    }
+
     // A monthly payment is a credit offer. Advertising one with no financing
     // block means advertising terms that do not exist — so the BUILD stops,
     // rather than the site shipping and the gate catching it later.

@@ -85,6 +85,8 @@ const D = {
   inkMuted: '#4A5268',
   onDark: '#C6D4EF',
   onDarkMuted: '#8FA6D2',
+  onDarkStrong: '#FFFFFF',
+  inkLift: '#2A3244',
 };
 
 const color = (key, label, help) => ({
@@ -278,6 +280,8 @@ export const FIELD_POLICY = {
   'brand.colors.inkMuted': color('inkMuted', 'Secondary text'),
   'brand.colors.onDark': color('onDark', 'Text on dark'),
   'brand.colors.onDarkMuted': color('onDarkMuted', 'Secondary text on dark'),
+  'brand.colors.onDarkStrong': color('onDarkStrong', 'Full-strength text on dark', 'Headlines and icons on dark panels. Usually pure white.'),
+  'brand.colors.inkLift': color('inkLift', 'Ink — lifted', 'Gradient top over ink-dark surfaces (e.g. the sold pill).'),
 
   /* ---------------- brand: type, logos, radius ---------------- */
   'brand.fonts.display': {
@@ -460,6 +464,26 @@ export const FIELD_POLICY = {
     help: 'REQUIRED if financing is offered. The qualifying terms — "on approved credit", who the offer applies to, what expires when. An offer stated without its terms is the claim regulators care about.',
     reviewWarnIfDefault: false,
     example: null,
+  },
+
+  /* ---------------- display policy (C14 / O-12) ----------------
+     What a price is allowed to SAY. Policy, not style: silence is the
+     safe state, so both flags are explicit decisions, never derived. */
+  'display.showPrice': {
+    source: 'ask',
+    group: 'financing',
+    control: 'checkbox',
+    label: 'Show cash prices',
+    help: 'Off shows "Ask for current pricing" instead of a number. A price shown is a claim; some dealers may not publish one.',
+    example: true,
+  },
+  'display.showMonthly': {
+    source: 'ask',
+    group: 'financing',
+    control: 'checkbox',
+    label: 'Show monthly payments',
+    help: 'A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.',
+    example: false,
   },
 
   /* ---------------- integrations ---------------- */

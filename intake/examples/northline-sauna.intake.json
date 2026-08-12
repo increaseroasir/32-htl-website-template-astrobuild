@@ -86,5 +86,5 @@
     "primaryCta": { "label": "See What's In Stock", "href": "/inventory" }
   },
 
-  "integrations": { "ghl": true, "meta": false, "zaraz": false, "sentry": true }
+  "integrations": { "ghl": true, "meta": false, "zaraz": false, "sentry": false }
 }

@@ -64,10 +64,9 @@
     "extraLinks": [
       { "label": "Find Your Match", "href": "/find-your-match" },
       { "label": "Inventory", "href": "/inventory" },
-      { "label": "Financing", "href": "/financing" },
       { "label": "Visit Us", "href": "/visit-us" }
     ]
   },
 
-  "integrations": { "ghl": true, "meta": true, "zaraz": true, "sentry": true }
+  "integrations": { "ghl": true, "meta": true, "zaraz": true, "sentry": false }
 }
