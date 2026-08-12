@@ -97,10 +97,13 @@ export async function withFixture(mutate, manifest = cleanManifest()) {
   const dir = await mkdtemp(join(tmpdir(), 'gate-fixture-'));
   try {
     await cp(join(ROOT, 'src'), join(dir, 'src'), { recursive: true });
-    // The gate also reads wrangler.toml and db/migrations (the D1
-    // migrations check); a fixture without them fails for the wrong reason.
+    // The gate also reads wrangler.toml, db/migrations (D1 migrations
+    // check), astro.config.ts (internal-routes wiring) and public/_headers
+    // (headers check); a fixture without them fails for the wrong reason.
     await cp(join(ROOT, 'wrangler.toml'), join(dir, 'wrangler.toml'));
     await cp(join(ROOT, 'db'), join(dir, 'db'), { recursive: true });
+    await cp(join(ROOT, 'astro.config.ts'), join(dir, 'astro.config.ts'));
+    await cp(join(ROOT, 'public'), join(dir, 'public'), { recursive: true });
     await mkdir(join(dir, 'dist'), { recursive: true });
     const manifestPath = join(dir, 'dist', 'gate-manifest.json');
     if (mutate) await mutate({ dir, manifest });
@@ -300,6 +303,36 @@ test('PASSES on rgb(var(--brand-x-rgb) / a)', async () => {
 
 test('PASSES on the two whitelisted material neutrals', async () => {
   assertPasses(await withFixture(onlyStyles('.a{background:linear-gradient(155deg,#eef2f8,#e2e9f4)}')), COLOUR);
+});
+
+/**
+ * The wildcard client-hint delegation coming back (C11 / verification
+ * defect #2). The fixture restores the shipped-wrong line; the check must
+ * refuse all three regressions it guards.
+ */
+test('FAILS when a ch-ua hint is delegated to (*)', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    const file = join(dir, 'public', '_headers');
+    const body = await readFile(file, 'utf8');
+    await writeFile(
+      file,
+      body.replace(/ch-ua-model=\([^)]*\)/, 'ch-ua-model=(*)'),
+    );
+  });
+  assertFails(run, 'Headers file is intact');
+});
+
+test('FAILS when ch-ua-full-version-list disappears', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    const file = join(dir, 'public', '_headers');
+    const body = await readFile(file, 'utf8');
+    await writeFile(file, body.replace('ch-ua-full-version-list=', 'ch-ua-full-version='));
+  });
+  assertFails(run, 'Headers file is intact');
+});
+
+test('PASSES on the shipped headers file', async () => {
+  assertPasses(await withFixture(null), 'Headers file is intact');
 });
 
 /**

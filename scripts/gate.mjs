@@ -370,7 +370,32 @@ async function sourceChecks() {
     pass('Internal routes are delisted', routeEntries.join(', '));
   }
 
-  // --- 7. D1 migrations configured ---------------------------------
+  // --- 7. Headers file is intact ------------------------------------
+  // public/_headers carries the client-hint delegation Meta match quality
+  // depends on (C11 / spec §4.1). Three regressions this refuses:
+  // the real token going missing, any ch-ua-* wildcard delegation
+  // (fingerprint handed to every third party), and the capability denials
+  // disappearing.
+  let headersBody = '';
+  try {
+    headersBody = await readFile(join(ROOT, 'public', '_headers'), 'utf8');
+  } catch {
+    /* missing file fails below */
+  }
+  const headerProblems = [];
+  if (!headersBody.includes('ch-ua-full-version-list=')) {
+    headerProblems.push('ch-ua-full-version-list missing (ch-ua-full-version alone is not a real token)');
+  }
+  if (/ch-ua-[a-z-]*=\(\*\)/.test(headersBody)) {
+    headerProblems.push('a ch-ua-* hint is delegated to (*) — Facebook origins only');
+  }
+  if (!headersBody.includes('camera=()')) {
+    headerProblems.push('capability denials (camera=() etc.) missing');
+  }
+  if (headerProblems.length) fail('Headers file is intact', headerProblems.join('; '));
+  else pass('Headers file is intact');
+
+  // --- 8. D1 migrations configured ---------------------------------
   // A schema change on a live client database is impossible without a
   // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
   // tables entirely, so an edit to schema.sql never reaches a client.
