@@ -24,8 +24,22 @@
 import { site } from '../config';
 
 const c = site.brand.colors;
-const f = site.brand.fonts;
-const r = site.brand.radius;
+
+/**
+ * TEMPLATE DESIGN CONSTANTS — not client facts. No client has ever varied
+ * the typeface or the corners, so they stopped being config questions.
+ * To change either: edit HERE, one file — every component reads the
+ * emitted var(--brand-font-*) / var(--brand-radius-*), and the font
+ * stylesheet is loaded below, so nothing else needs to move.
+ */
+const FONTS = {
+  display: "'Bricolage Grotesque', system-ui, sans-serif",
+  body: "'Instrument Sans', system-ui, sans-serif",
+  mono: "'Spline Sans Mono', ui-monospace, monospace",
+};
+const GOOGLE_FONTS_HREF =
+  'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap';
+const RADIUS = { card: 20, button: 14, pill: 999 };
 
 /** "#16469B" → "22 70 155" (space-separated, for rgb(... / alpha) syntax) */
 function toRgbTriplet(hex: string): string {
@@ -56,15 +70,18 @@ declarations.push(`--brand-line:rgb(${toRgbTriplet(c.deep)} / .12)`);
 declarations.push(`--brand-line-strong:rgb(${toRgbTriplet(c.deep)} / .5)`);
 declarations.push(`--brand-line-strong:rgb(${toRgbTriplet(c.deep)} / .2)`);
 
-declarations.push(`--brand-font-display:${f.display}`);
-declarations.push(`--brand-font-body:${f.body}`);
-declarations.push(`--brand-font-mono:${f.mono}`);
+declarations.push(`--brand-font-display:${FONTS.display}`);
+declarations.push(`--brand-font-body:${FONTS.body}`);
+declarations.push(`--brand-font-mono:${FONTS.mono}`);
 
-declarations.push(`--brand-radius-card:${r.card}px`);
-declarations.push(`--brand-radius-button:${r.button}px`);
-declarations.push(`--brand-radius-pill:${r.pill}px`);
+declarations.push(`--brand-radius-card:${RADIUS.card}px`);
+declarations.push(`--brand-radius-button:${RADIUS.button}px`);
+declarations.push(`--brand-radius-pill:${RADIUS.pill}px`);
 
 const css = `:root{${declarations.join(';')}}`;
 ---
 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href={GOOGLE_FONTS_HREF} />
 <style is:inline set:html={css}></style>

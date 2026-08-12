@@ -65,16 +65,6 @@ const localBusiness = buildLocalBusiness();
     <link rel="icon" href={site.brand.logos.favicon} />
     <meta name="theme-color" content={site.brand.colors.night} />
 
-    {
-      site.brand.fonts.googleFontsHref && (
-        <>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-          <link rel="stylesheet" href={site.brand.fonts.googleFontsHref} />
-        </>
-      )
-    }
-
     <meta property="og:site_name" content={site.identity.name} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />

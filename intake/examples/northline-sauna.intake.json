@@ -66,8 +66,7 @@
       "footer": "https://example.com/brand/northline-knockout.svg",
       "favicon": "https://example.com/brand/northline-favicon.svg",
       "ogImage": "https://example.com/brand/northline-og.png"
-    },
-    "radius": { "card": 8, "button": 6, "pill": 999 }
+    }
   },
 
   "nav": {

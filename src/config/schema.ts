@@ -91,15 +91,6 @@ const brandSchema = z.object({
       }
     }),
 
-  /** Font families. Loaded once in the base layout, referenced by token. */
-  fonts: z.object({
-    display: z.string().min(1), // headings, buttons
-    body: z.string().min(1), // paragraphs
-    mono: z.string().min(1), // eyebrows, labels, pills
-    /** Google Fonts href, or null if self-hosting. */
-    googleFontsHref: z.url().nullable(),
-  }),
-
   /**
    * Logos. Separate light/dark variants exist because the Sun Pool mobile
    * drawer showed text on a dark background — a missing knockout logo.
@@ -109,13 +100,6 @@ const brandSchema = z.object({
     footer: absoluteAsset, // knockout, dark background — also used by mobile drawer
     favicon: absoluteAsset,
     ogImage: absoluteAsset,
-  }),
-
-  /** Corner radius scale, in px. Sun Pool: cards 20, buttons 14. */
-  radius: z.object({
-    card: z.number().int().min(0).max(48),
-    button: z.number().int().min(0).max(48),
-    pill: z.number().int().min(0).max(999),
   }),
 });
 

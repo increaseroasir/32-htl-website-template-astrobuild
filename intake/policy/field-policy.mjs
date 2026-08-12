@@ -235,24 +235,6 @@ export const FIELD_POLICY = {
   },
 
   /* ---------------- brand: type, logos, radius ---------------- */
-  'brand.fonts.display': {
-    source: 'default',
-    group: 'brand',
-    control: 'text',
-    label: 'Display font stack',
-    example: "'Bricolage Grotesque', system-ui, sans-serif",
-  },
-  'brand.fonts.body': { source: 'default', group: 'brand', control: 'text', label: 'Body font stack', example: "'Instrument Sans', system-ui, sans-serif" },
-  'brand.fonts.mono': { source: 'default', group: 'brand', control: 'text', label: 'Mono font stack', example: "'Spline Sans Mono', ui-monospace, monospace" },
-  'brand.fonts.googleFontsHref': {
-    source: 'default',
-    group: 'brand',
-    control: 'url',
-    label: 'Google Fonts link',
-    help: 'Must load every family named above. Blank means self-hosted fonts.',
-    example:
-      'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap',
-  },
   'brand.logos.nav': {
     source: 'ask',
     group: 'brand',
@@ -287,9 +269,6 @@ export const FIELD_POLICY = {
     reviewWarnIfDefault: true,
     example: '/brand/og-default.png',
   },
-  'brand.radius.card': { source: 'default', group: 'brand', control: 'number', label: 'Card corner radius (px)', example: 20 },
-  'brand.radius.button': { source: 'default', group: 'brand', control: 'number', label: 'Button corner radius (px)', example: 14 },
-  'brand.radius.pill': { source: 'default', group: 'brand', control: 'number', label: 'Pill corner radius (px)', example: 999 },
 
   /* ---------------- navigation ---------------- */
   'nav.items': {

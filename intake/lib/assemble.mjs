@@ -198,14 +198,12 @@ export function assembleConfig(intake) {
 
     brand: {
       colors: { ...defaultsUnder('brand.colors'), ...(brand.colors ?? {}) },
-      fonts: { ...defaultsUnder('brand.fonts'), ...(brand.fonts ?? {}) },
       logos: {
         nav: brand.logos?.nav,
         footer: brand.logos?.footer,
         favicon: blank(brand.logos?.favicon) ? defaultFor('brand.logos.favicon') : brand.logos.favicon,
         ogImage: blank(brand.logos?.ogImage) ? defaultFor('brand.logos.ogImage') : brand.logos.ogImage,
       },
-      radius: { ...defaultsUnder('brand.radius'), ...(brand.radius ?? {}) },
     },
 
     nav: {

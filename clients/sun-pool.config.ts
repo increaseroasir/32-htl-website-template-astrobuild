@@ -79,20 +79,12 @@ export const rawClientConfig: ClientConfigInput = {
       accent: '#FFB81C', // --gold
       urgent: '#D7261E', // --red
     },
-    fonts: {
-      display: "'Bricolage Grotesque', system-ui, sans-serif",
-      body: "'Instrument Sans', system-ui, sans-serif",
-      mono: "'Spline Sans Mono', ui-monospace, monospace",
-      googleFontsHref:
-        'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap',
-    },
     logos: {
       nav: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-nav.png',
       footer: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-footer.png',
       favicon: '/brand/favicon.svg', // CONFIRM — no R2 favicon recorded.
       ogImage: '/brand/og-default.png', // CONFIRM — no R2 OG image recorded.
     },
-    radius: { card: 20, button: 14, pill: 999 },
   },
 
   nav: {

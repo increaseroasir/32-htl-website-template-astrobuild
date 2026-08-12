@@ -89,13 +89,6 @@ export const rawClientConfig: ClientConfigInput = {
       accent: '#FFB81C', // gold
       urgent: '#D7261E', // red
     },
-    fonts: {
-      display: "'Bricolage Grotesque', system-ui, sans-serif",
-      body: "'Instrument Sans', system-ui, sans-serif",
-      mono: "'Spline Sans Mono', ui-monospace, monospace",
-      googleFontsHref:
-        'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap',
-    },
     // Absolute paths enforced by the schema — a relative path here would
     // 404 on nested routes, which is exactly what killed the category heroes.
     logos: {
@@ -103,11 +96,6 @@ export const rawClientConfig: ClientConfigInput = {
       footer: '/brand/logo-footer.svg', // knockout, for dark backgrounds + mobile drawer
       favicon: '/brand/favicon.svg',
       ogImage: '/brand/og-default.png',
-    },
-    radius: {
-      card: 20,
-      button: 14,
-      pill: 999,
     },
   },
 

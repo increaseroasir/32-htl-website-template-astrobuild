@@ -70,9 +70,9 @@
     }
   ],
   "counts": {
-    "total": 68,
+    "total": 61,
     "ask": 43,
-    "default": 17,
+    "default": 10,
     "fixed": 1,
     "composed": 7
   },
@@ -681,63 +681,6 @@
       "example": null
     },
     {
-      "path": "brand.fonts.display",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Display font stack",
-      "control": "text",
-      "example": "'Bricolage Grotesque', system-ui, sans-serif"
-    },
-    {
-      "path": "brand.fonts.body",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Body font stack",
-      "control": "text",
-      "example": "'Instrument Sans', system-ui, sans-serif"
-    },
-    {
-      "path": "brand.fonts.mono",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Mono font stack",
-      "control": "text",
-      "example": "'Spline Sans Mono', ui-monospace, monospace"
-    },
-    {
-      "path": "brand.fonts.googleFontsHref",
-      "type": "string",
-      "required": true,
-      "nullable": true,
-      "constraints": {
-        "format": "url"
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Google Fonts link",
-      "help": "Must load every family named above. Blank means self-hosted fonts.",
-      "control": "url",
-      "example": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap"
-    },
-    {
       "path": "brand.logos.nav",
       "type": "string",
       "required": true,
@@ -808,54 +751,6 @@
       "help": "What appears when someone shares the site. Defaults to the template placeholder — the review step flags it.",
       "control": "url",
       "example": "/brand/og-default.png"
-    },
-    {
-      "path": "brand.radius.card",
-      "type": "number",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "integer": true,
-        "min": 0,
-        "max": 48
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Card corner radius (px)",
-      "control": "number",
-      "example": 20
-    },
-    {
-      "path": "brand.radius.button",
-      "type": "number",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "integer": true,
-        "min": 0,
-        "max": 48
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Button corner radius (px)",
-      "control": "number",
-      "example": 14
-    },
-    {
-      "path": "brand.radius.pill",
-      "type": "number",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "integer": true,
-        "min": 0,
-        "max": 999
-      },
-      "source": "default",
-      "group": "brand",
-      "label": "Pill corner radius (px)",
-      "control": "number",
-      "example": 999
     },
     {
       "path": "nav.items",
