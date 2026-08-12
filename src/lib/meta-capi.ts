@@ -17,7 +17,7 @@
  * such problem, and carries IP and user-agent that improve matching.
  */
 
-import { hashEmail, hashPhone, hashName, sha256Hex } from './hash';
+import { hashEmail, hashPhone, hashName } from './hash';
 
 export interface CapiUserData {
   email: string;
@@ -93,13 +93,18 @@ export async function sendMetaCapi(
   const version = config.apiVersion ?? 'v21.0';
   const url = `https://graph.facebook.com/${version}/${config.pixelId}/events`;
 
-  const [em, ph, fn, ln, externalId] = await Promise.all([
+  const [em, ph, fn, ln] = await Promise.all([
     hashEmail(event.user.email),
     hashPhone(event.user.phone),
     hashName(event.user.firstName),
     hashName(event.user.lastName),
-    event.user.externalId ? sha256Hex(event.user.externalId) : Promise.resolve(null),
   ]);
+
+  // external_id goes RAW. The browser pixel sends the raw lead UUID; Meta
+  // matches the two values as sent, so hashing here guaranteed a mismatch —
+  // the secondary match key was dead on every server event. em/ph/fn/ln are
+  // PII and MUST be hashed; the UUID is our own opaque value and must not be.
+  const externalId = event.user.externalId || null;
 
   const userData = compact({
     em: em ? [em] : [],
