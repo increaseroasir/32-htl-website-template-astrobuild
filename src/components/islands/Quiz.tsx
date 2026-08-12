@@ -97,11 +97,10 @@ export default function Quiz({
     e.preventDefault();
     setError(null);
 
-    if (company.trim().length > 0) {
-      // Silently succeed for bots — no signal about why.
-      window.location.href = '/thank-you';
-      return;
-    }
+    // The honeypot verdict lives on the SERVER (validateLead) — a single
+    // decider that also catches bots POSTing straight to the API. The field
+    // is still submitted below; the client no longer pre-empts it, so every
+    // drop is server-logged instead of silently swallowed here (I-07).
 
     setSubmitting(true);
     const clientEventId = crypto.randomUUID();
@@ -112,6 +111,7 @@ export default function Quiz({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          company, // honeypot — the server is the decider (validateLead)
           category,
           productSlug,
           sourcePage,

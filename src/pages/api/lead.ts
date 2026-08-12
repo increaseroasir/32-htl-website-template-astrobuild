@@ -16,9 +16,9 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getDb, isEnabledCategory, inventoryStatus } from '../../lib/db';
+import { getDb, inventoryStatus } from '../../lib/db';
 import { site, derived } from '../../config';
-import { consentTextFor } from '../../config/consent';
+import { validateLead, clean } from '../../lib/validate-lead';
 import { getEnv } from '../../lib/admin-auth';
 import { sendMetaCapi, deriveFbc, type CapiResult } from '../../lib/meta-capi';
 import { syncToGhl, buildGhlTags, type GhlResult } from '../../lib/ghl';
@@ -26,43 +26,11 @@ import { resolveEventValue } from '../../lib/capi-events';
 
 export const prerender = false;
 
-interface LeadBody {
-  name?: unknown;
-  email?: unknown;
-  phone?: unknown;
-  message?: unknown;
-  category?: unknown;
-  productSlug?: unknown;
-  sourcePage?: unknown;
-  eventId?: unknown;
-  consentVersion?: unknown;
-}
-
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-}
-
-/** Strip control characters and angle brackets, then cap the length. */
-function clean(value: unknown, max: number): string {
-  if (typeof value !== 'string') return '';
-  return value
-    .replace(/[<>]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, max);
-}
-
-/** Deliberately permissive — a real customer with an odd address still counts. */
-function looksLikeEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
-}
-
-/** North American sanity check: at least 10 digits once punctuation is gone. */
-function digitsOnly(value: string): string {
-  return value.replace(/\D/g, '');
 }
 
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
@@ -72,50 +40,50 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     return json({ ok: false, error: status.message }, 503);
   }
 
-  let body: LeadBody;
+  let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as LeadBody;
+    body = (await request.json()) as Record<string, unknown>;
   } catch {
     return json({ ok: false, error: 'Invalid request.' }, 400);
   }
 
-  const name = clean(body.name, 140);
-  const email = clean(body.email, 200).toLowerCase();
-  const phoneRaw = clean(body.phone, 40);
-  const phone = digitsOnly(phoneRaw);
-  const message = clean(body.message, 1000);
-  const productSlug = clean(body.productSlug, 120);
-  const sourcePage = clean(body.sourcePage, 200);
-  const eventId = clean(body.eventId, 80) || crypto.randomUUID();
+  // One decider for everything between POST and insert — honeypot, consent
+  // version, category allowlist, field rules (src/lib/validate-lead.ts).
+  const verdict = validateLead(body, site.identity.name);
 
-  // Category: empty is fine ("just browsing"), but a value must be one this
-  // client actually sells. Not a 500 — a clear, honest rejection.
-  const requested = clean(body.category, 40);
-  if (requested && !isEnabledCategory(requested)) {
-    return json({ ok: false, error: 'That is not something we sell.' }, 400);
-  }
-  const category = requested;
-
-  // Consent: the version is resolved to its exact wording SERVER-SIDE.
-  // Client-supplied text is never trusted; an unknown or missing version is
-  // a stale or tampered client and the lead is refused — a contactable lead
-  // with no provable consent record is legal exposure, not a lead.
-  const consentVersion = clean(body.consentVersion, 40);
-  const consentText = consentVersion ? consentTextFor(consentVersion, site.identity.name) : null;
-  if (!consentText) {
-    return json({ ok: false, error: 'Please refresh the page and submit again.' }, 400);
+  if (verdict.kind === 'drop') {
+    // The response is indistinguishable from real success — a bot must not
+    // learn which field tripped it. The log line is the recovery path for
+    // the rare human whose browser autofilled the trap (I-07); watch for
+    // it after launch.
+    console.warn('[lead] honeypot drop', {
+      reason: verdict.reason,
+      sourcePage: typeof body.sourcePage === 'string' ? body.sourcePage.slice(0, 200) : '',
+    });
+    return json({
+      ok: true,
+      leadUuid: cookies.get('lead_uuid')?.value ?? crypto.randomUUID(),
+      eventId: crypto.randomUUID(),
+    });
   }
 
-  const problems: string[] = [];
-  if (name.length < 2) problems.push('a name');
-  if (phone.length < 10) problems.push('a phone number');
-  if (!looksLikeEmail(email)) problems.push('a valid email');
-  if (problems.length > 0) {
-    return json({ ok: false, error: `Please add ${problems.join(', ')}.` }, 400);
+  if (verdict.kind === 'reject') {
+    return json({ ok: false, error: verdict.error }, verdict.status);
   }
 
-  const [firstName = '', ...rest] = name.split(' ');
-  const lastName = rest.join(' ');
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    message,
+    category,
+    productSlug,
+    sourcePage,
+    eventId,
+    consentVersion,
+    consentText,
+  } = verdict.lead;
 
   // Cloudflare's request metadata. In Astro v6 + adapter v13 the path is
   // request.cf (locals.runtime.cf was removed and throws). Present on
