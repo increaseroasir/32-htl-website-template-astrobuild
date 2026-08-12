@@ -1,0 +1,66 @@
+---
+/**
+ * 500 — the page Astro renders when anything server-side throws (I-18).
+ *
+ * Deliberately boring: brand tokens, the phone number, zero dynamic data.
+ * Nothing here reads the database or an integration, because this page
+ * renders precisely when those are broken — a 500 page that can itself
+ * throw is two outages stacked. And no diagnostic detail: whatever went
+ * wrong is for the logs, never for a customer's screen (RC-A).
+ */
+import { site, derived } from '../config';
+import BrandTokens from '../components/BrandTokens.astro';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Something went wrong — {site.identity.name}</title>
+    <BrandTokens />
+  </head>
+  <body>
+    <main class="err-wrap">
+      <p class="eyebrow">Something went wrong</p>
+      <h1>That didn't work — but we're still here</h1>
+      <p>
+        Give it another try in a moment, or skip the website entirely:
+        call <a href={derived.telHref}>{derived.phoneDisplay}</a> and a human
+        will sort you out.
+      </p>
+      <p><a class="err-home" href="/">Back to the homepage</a></p>
+    </main>
+  </body>
+</html>
+
+<style>
+  .err-wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 96px 20px 120px;
+    font-family: var(--font-body, system-ui, sans-serif);
+    color: var(--brand-ink);
+    text-align: center;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: var(--brand-ink-muted);
+  }
+  h1 {
+    font-family: var(--font-display, inherit);
+    font-size: 1.8rem;
+    margin: 12px 0 16px;
+  }
+  a {
+    color: var(--brand-deep);
+    font-weight: 600;
+  }
+  .err-home {
+    display: inline-block;
+    margin-top: 8px;
+  }
+</style>

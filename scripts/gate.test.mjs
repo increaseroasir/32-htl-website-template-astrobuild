@@ -303,6 +303,26 @@ test('PASSES on the two whitelisted material neutrals', async () => {
 });
 
 /**
+ * Operator diagnostics on a customer page (C9 / the H-area root cause).
+ * The fixture adds a page interpolating operatorDetail; the check must
+ * name it, and must NOT fire on proof.astro (the operator's own screen)
+ * or on console.error lines.
+ */
+test('FAILS when a customer page renders operatorDetail', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    await writeFile(
+      join(dir, 'src', 'pages', 'broken-status.astro'),
+      `---\nimport { getDb, inventoryStatus } from '../lib/db';\nconst dbStatus = inventoryStatus(getDb());\n---\n<p>{dbStatus.operatorDetail}</p>\n`,
+    );
+  });
+  assertFails(run, 'No operator diagnostics in customer pages');
+});
+
+test('PASSES on the clean tree — proof.astro and console lines exempt', async () => {
+  assertPasses(await withFixture(null), 'No operator diagnostics in customer pages');
+});
+
+/**
  * A schema change with no path to a live client DB (J-08). The fixture
  * removes db/migrations; the check must notice before the first client
  * database exists, not after.

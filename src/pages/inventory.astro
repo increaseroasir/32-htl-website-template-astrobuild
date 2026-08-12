@@ -19,6 +19,7 @@ import { buildItemList } from '../lib/seo';
 
 const db = getDb();
 const dbStatus = inventoryStatus(db);
+if (!dbStatus.configured) console.error('[inventory]', dbStatus.operatorDetail);
 const products = db ? await listProducts(db) : [];
 const counts = db ? await countProductsByCategory(db) : {};
 const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
@@ -64,7 +65,7 @@ const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
       !dbStatus.configured ? (
         <div class="empty">
           <h2>Inventory isn't connected yet</h2>
-          <p>{dbStatus.message}</p>
+          <p>{dbStatus.customerMessage}</p>
         </div>
       ) : products.length === 0 ? (
         <div class="empty">

@@ -22,7 +22,9 @@ export const prerender = false;
 const fin = site.financing;
 
 if (!fin) {
-  return new Response(null, { status: 404, statusText: 'Not found' });
+  // Branded 404, not a blank body (I-16). rewrite renders /404 in place
+  // while keeping this URL — the response status comes from 404.astro.
+  return Astro.rewrite('/404');
 }
 ---
 

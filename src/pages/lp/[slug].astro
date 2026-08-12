@@ -24,7 +24,8 @@ const { slug } = Astro.params;
 const lp = slug ? findLanding(slug) : undefined;
 
 if (!lp) {
-  return new Response(null, { status: 404, statusText: 'Not found' });
+  // Branded 404, not a blank body (I-16).
+  return Astro.rewrite('/404');
 }
 
 const sourcePage = `/lp/${lp.slug}`;

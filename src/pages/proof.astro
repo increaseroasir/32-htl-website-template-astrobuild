@@ -13,7 +13,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { site, derived } from '../config';
 import { CATEGORY_CATALOG } from '../config/categories';
-import { getDb, listProducts, countProductsByCategory, inventoryStatus, PUBLIC_STATUSES } from '../lib/db';
+import { getDb, listProducts, countProductsByCategory, inventoryStatus } from '../lib/db';
 
 const swatches = Object.entries(site.brand.colors);
 
@@ -230,10 +230,8 @@ const counts = db ? await countProductsByCategory(db) : {};
       </p>
 
       <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
-        <dt class="font-semibold">Binding</dt>
-        <dd><code>{dbStatus.bindingName}</code> — {dbStatus.configured ? 'bound' : 'not bound'}</dd>
-        <dt class="font-semibold">Visible statuses</dt>
-        <dd><code>{PUBLIC_STATUSES.join(', ')}</code> <span class="text-brand-ink-muted">(allow-list)</span></dd>
+        <dt class="font-semibold">Database</dt>
+        <dd>{dbStatus.configured ? 'bound' : 'not bound'}</dd>
         <dt class="font-semibold text-brand-accent-dark">Categories queried</dt>
         <dd>
           {derived.enabledCategorySlugs.length > 0
@@ -245,7 +243,7 @@ const counts = db ? await countProductsByCategory(db) : {};
       {
         !dbStatus.configured ? (
           <p class="mt-4 rounded-card border border-brand-line p-4 text-sm text-brand-ink-muted">
-            {dbStatus.message}
+            {dbStatus.operatorDetail}
           </p>
         ) : (
           <>

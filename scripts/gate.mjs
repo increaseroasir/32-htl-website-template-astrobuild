@@ -306,7 +306,37 @@ async function sourceChecks() {
   if (tokenish.length) fail('No credentials committed in source', tokenish.join(', '));
   else pass('No credentials committed in source');
 
-  // --- 5. D1 migrations configured ---------------------------------
+  // --- 5. No operator diagnostics in customer pages ----------------
+  // inventoryStatus() splits one string into {operatorDetail,
+  // customerMessage} (C9). A customer page that renders the operator half
+  // prints wrangler commands and binding names to shoppers and crawlers —
+  // the whole H-area root cause. admin/ and proof.astro are the operator's
+  // own screens; console.* lines are the operator's console. Everything
+  // else in src/pages may only touch customerMessage.
+  const diagOffenders = [];
+  for (const file of files) {
+    const rel = relative(ROOT, file);
+    if (!rel.startsWith('src/pages/')) continue;
+    if (rel.startsWith('src/pages/admin/') || rel === 'src/pages/proof.astro') continue;
+    const body = stripComments(await readFile(file, 'utf8'));
+    for (const [i, line] of body.split('\n').entries()) {
+      if (line.includes('console.')) continue;
+      if (/operatorDetail|dbStatus\.message|Status\.message|status\.message/.test(line)) {
+        diagOffenders.push(`${rel}:${i + 1}`);
+      }
+    }
+  }
+  if (diagOffenders.length) {
+    fail(
+      'No operator diagnostics in customer pages',
+      `${diagOffenders.join(', ')} — renders operator detail to customers. Render customerMessage; ` +
+        'send operatorDetail to console.error.',
+    );
+  } else {
+    pass('No operator diagnostics in customer pages');
+  }
+
+  // --- 6. D1 migrations configured ---------------------------------
   // A schema change on a live client database is impossible without a
   // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
   // tables entirely, so an edit to schema.sql never reaches a client.

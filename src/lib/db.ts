@@ -17,7 +17,7 @@
  */
 
 import { env } from 'cloudflare:workers';
-import { enabledCategorySlugs, enabledCategories, site } from '../config';
+import { enabledCategorySlugs, enabledCategories, site, derived } from '../config';
 import type { CategorySlug } from '../config/categories';
 
 /* ------------------------------------------------------------------ */
@@ -320,21 +320,34 @@ export interface InventoryStatus {
   configured: boolean;
   bindingName: string;
   enabledCategories: string[];
-  message: string;
+  /**
+   * For the OPERATOR'S CONSOLE and internal pages only — wrangler commands,
+   * binding names, config paths. Rendering this to a customer page is a gate
+   * failure ('No operator diagnostics in customer pages').
+   */
+  operatorDetail: string;
+  /**
+   * The only string a customer may see. Built from config, zero internals,
+   * and it gives them the one thing that actually helps: a way to reach a
+   * human (RC-A — one string was serving two audiences).
+   */
+  customerMessage: string;
 }
 
 /** Used by pages and API routes to explain themselves when D1 is absent. */
 export function inventoryStatus(db: D1Database | null): InventoryStatus {
   const bindingName = site.integrations.d1BindingName;
+  const customerMessage = `Live inventory is temporarily unavailable — call ${derived.phoneDisplay}.`;
   if (!db) {
     return {
       configured: false,
       bindingName,
       enabledCategories: [...enabledCategorySlugs],
-      message:
+      operatorDetail:
         `No D1 database is bound as "${bindingName}". Create one with ` +
         '`wrangler d1 create <name>`, uncomment the [[d1_databases]] block in ' +
-        'wrangler.toml, then run `npm run db:apply:local`.',
+        'wrangler.toml, then run `npm run db:migrate:local`.',
+      customerMessage,
     };
   }
   if (enabledCategorySlugs.length === 0) {
@@ -342,15 +355,17 @@ export function inventoryStatus(db: D1Database | null): InventoryStatus {
       configured: true,
       bindingName,
       enabledCategories: [],
-      message:
+      operatorDetail:
         'Database is bound, but no categories are enabled in client.config.ts, ' +
         'so there is nothing to sell and every product query returns empty.',
+      customerMessage,
     };
   }
   return {
     configured: true,
     bindingName,
     enabledCategories: [...enabledCategorySlugs],
-    message: 'Inventory is configured.',
+    operatorDetail: 'Inventory is configured.',
+    customerMessage,
   };
 }

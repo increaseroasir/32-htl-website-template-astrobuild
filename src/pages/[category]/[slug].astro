@@ -28,6 +28,7 @@ const resolved = enabled ? enabledCategories.find((c) => c.slug === definition?.
 
 const db = resolved ? getDb() : null;
 const dbStatus = inventoryStatus(db);
+if (resolved && !dbStatus.configured) console.error('[pdp]', dbStatus.operatorDetail);
 const product = db && resolved ? await getProductBySlug(db, slug) : null;
 
 // The product must live in the category the URL claims, or /hot-tubs/x and
@@ -72,7 +73,7 @@ const productSchema =
         <p>
           {dbStatus.configured
             ? 'It may have sold, or the link may be out of date.'
-            : dbStatus.message}
+            : dbStatus.customerMessage}
         </p>
         <p class="nf-actions">
           <a class="btn btn-gold" href={site.nav.primaryCta.href}>

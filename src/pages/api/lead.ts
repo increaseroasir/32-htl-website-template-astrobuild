@@ -39,9 +39,10 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     const status = inventoryStatus(db);
     // A lead arrived and was REFUSED because D1 is unbound. Without this
     // line the operator's only signal is customers who stop converting
-    // (I-01 — the loudest possible silent failure).
-    console.error('[lead] REFUSED — D1 unbound:', status.message);
-    return json({ ok: false, error: status.message }, 503);
+    // (I-01 — the loudest possible silent failure). The wrangler-speak goes
+    // to the console; the customer gets a phone number (H-03).
+    console.error('[lead] REFUSED — D1 unbound:', status.operatorDetail);
+    return json({ ok: false, error: status.customerMessage }, 503);
   }
 
   let body: Record<string, unknown>;

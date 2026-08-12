@@ -36,6 +36,7 @@ if (!resolved) {
 
 const db = resolved ? getDb() : null;
 const dbStatus = inventoryStatus(db);
+if (resolved && !dbStatus.configured) console.error('[category]', dbStatus.operatorDetail);
 const products = db && resolved ? await listProducts(db, { category: resolved.slug }) : [];
 const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site.identity.name}`) : null;
 ---
@@ -89,7 +90,7 @@ const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site
         {!dbStatus.configured ? (
           <div class="empty">
             <h2>Inventory isn't connected yet</h2>
-            <p>{dbStatus.message}</p>
+            <p>{dbStatus.customerMessage}</p>
           </div>
         ) : products.length === 0 ? (
           <div class="empty">
