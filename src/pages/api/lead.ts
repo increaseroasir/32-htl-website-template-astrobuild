@@ -117,6 +117,16 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   const [firstName = '', ...rest] = name.split(' ');
   const lastName = rest.join(' ');
 
+  // Cloudflare's request metadata. In Astro v6 + adapter v13 the path is
+  // request.cf (locals.runtime.cf was removed and throws). Present on
+  // Workers; absent under plain `astro dev`, so every consumer treats a
+  // missing field as "omit".
+  const cf = (
+    request as Request & {
+      cf?: { postalCode?: string; city?: string; regionCode?: string; country?: string };
+    }
+  ).cf;
+
   // The UUID is the one middleware assigned on arrival, so a repeat
   // submission updates the same lead instead of creating a duplicate.
   const uuid = cookies.get('lead_uuid')?.value ?? crypto.randomUUID();
@@ -280,6 +290,14 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
                 fbc: deriveFbc(cookies.get('_fbc')?.value ?? '', ft('fbclid'), now),
                 clientIp: clientAddress ?? '',
                 userAgent: request.headers.get('user-agent') ?? '',
+                // Free geo match keys from Cloudflare's edge (P-01, spec
+                // §2.5). Null-safe: absent cf fields are omitted downstream,
+                // never empty-string-hashed. Lead event only — stage events
+                // have no request to read geo from.
+                zip: cf?.postalCode ?? '',
+                city: cf?.city ?? '',
+                state: cf?.regionCode ?? '',
+                country: cf?.country ?? '',
               },
               custom: {
                 content_category: categoryLabel,

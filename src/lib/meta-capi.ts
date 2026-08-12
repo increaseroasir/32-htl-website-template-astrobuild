@@ -17,7 +17,7 @@
  * such problem, and carries IP and user-agent that improve matching.
  */
 
-import { hashEmail, hashPhone, hashName } from './hash';
+import { hashEmail, hashPhone, hashName, hashPlain } from './hash';
 
 export interface CapiUserData {
   email: string;
@@ -30,6 +30,33 @@ export interface CapiUserData {
   fbc: string;
   clientIp: string;
   userAgent: string;
+  /**
+   * Geo match keys, from `request.cf` — Cloudflare hands them over free on
+   * every request (P-01, spec §2.5). Pass the raw cf values; normalisation
+   * and hashing happen HERE so no caller can send them wrong. `regionCode`
+   * and `country` are 2-letter codes as cf provides them. Absent or empty →
+   * the key is omitted entirely, never empty-string-hashed.
+   */
+  zip?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+/**
+ * Meta's normalisation for geo keys: lowercase, letters and digits only
+ * (no spaces or punctuation), and a US-shaped zip truncated to 5 digits.
+ */
+function normalizeGeo(value: string, kind: 'zp' | 'ct' | 'st' | 'country'): string {
+  const flat = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (kind === 'zp' && /^\d{5}/.test(flat)) return flat.slice(0, 5);
+  return flat;
+}
+
+/** Normalise-then-hash for an optional geo value. '' or undefined → null. */
+function hashGeo(value: string | undefined, kind: 'zp' | 'ct' | 'st' | 'country') {
+  const normalized = value ? normalizeGeo(value, kind) : '';
+  return normalized ? hashPlain(normalized) : Promise.resolve(null);
 }
 
 export interface CapiEvent {
@@ -93,11 +120,15 @@ export async function sendMetaCapi(
   const version = config.apiVersion ?? 'v21.0';
   const url = `https://graph.facebook.com/${version}/${config.pixelId}/events`;
 
-  const [em, ph, fn, ln] = await Promise.all([
+  const [em, ph, fn, ln, zp, ct, st, country] = await Promise.all([
     hashEmail(event.user.email),
     hashPhone(event.user.phone),
     hashName(event.user.firstName),
     hashName(event.user.lastName),
+    hashGeo(event.user.zip, 'zp'),
+    hashGeo(event.user.city, 'ct'),
+    hashGeo(event.user.state, 'st'),
+    hashGeo(event.user.country, 'country'),
   ]);
 
   // external_id goes RAW. The browser pixel sends the raw lead UUID; Meta
@@ -111,6 +142,10 @@ export async function sendMetaCapi(
     ph: ph ? [ph] : [],
     fn: fn ? [fn] : [],
     ln: ln ? [ln] : [],
+    zp: zp ? [zp] : [],
+    ct: ct ? [ct] : [],
+    st: st ? [st] : [],
+    country: country ? [country] : [],
     external_id: externalId ? [externalId] : [],
     fbp: event.user.fbp,
     fbc: event.user.fbc,
