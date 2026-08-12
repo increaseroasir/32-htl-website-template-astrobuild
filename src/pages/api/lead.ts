@@ -212,8 +212,8 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     const categoryLabel =
       derived.enabledCategories.find((c) => c.slug === category)?.label ?? category;
 
-    // Bottom rung of the value ladder. Resolves to 0 unless a client has
-    // deliberately overridden META_VALUE_LEAD.
+    // Bottom rung of the value ladder — immovably 0 (C17): no env
+    // override exists, so nothing can quietly invert the ladder.
     const leadValueResult = resolveEventValue('Lead', e as unknown as Record<string, string | undefined>);
     const leadValue = leadValueResult.ok ? leadValueResult.value : 0;
     if (leadValueResult.ok && leadValueResult.malformedEnvKey) {

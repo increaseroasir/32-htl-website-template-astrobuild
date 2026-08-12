@@ -40,9 +40,8 @@ interface Env {
   /**
    * Conversion value ladder. Commercial figures, so they are secrets per
    * client rather than config — see src/lib/capi-events.ts for why Lead is
-   * 0 and why Purchase has no default at all.
+   * immovably 0 (no env override exists) and why Purchase has no default.
    */
-  META_VALUE_LEAD?: string;
   META_VALUE_QUALIFIED?: string;
   META_VALUE_SCHEDULE?: string;
   META_VALUE_SHOWED?: string;

@@ -76,7 +76,11 @@ export const CAPI_EVENTS: Record<CapiEventName, CapiEventDefinition> = {
     name: 'Lead',
     actionSource: 'website',
     defaultValue: 0,
-    envKey: 'META_VALUE_LEAD',
+    // IMMOVABLE (C17 / K-11). Lead's 0 is the design, not a default to
+    // override: an env var here could silently invert the whole ladder —
+    // Meta optimising for form fills again. The other rungs stay
+    // env-tunable because their dollar figures ARE per-client.
+    envKey: null,
     acceptsSuppliedValue: false,
   },
   QualifiedLead: {

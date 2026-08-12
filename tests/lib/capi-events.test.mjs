@@ -47,3 +47,10 @@ test('Lead resolves to 0 by default — the designed bottom rung', () => {
   assert.equal(r.ok, true);
   assert.equal(r.value, 0);
 });
+
+test("Lead's value is immovable — a set META_VALUE_LEAD is ignored (C17/K-11)", () => {
+  const r = resolveEventValue('Lead', { META_VALUE_LEAD: '500' });
+  assert.equal(r.ok, true);
+  assert.equal(r.value, 0);
+  assert.equal(r.source, 'default');
+});
