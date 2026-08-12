@@ -96,7 +96,6 @@ src/lib/meta-capi.ts        Conversions API. Hashing + the dedup event_id.
 src/lib/ghl.ts              GoHighLevel contact upsert.
 src/lib/hash.ts             SHA-256 with Meta's normalisation rules.
 src/lib/admin-auth.ts       Reused Sun Pool auth. Do not redesign.
-src/pages/api/inventory.ts  Public read-only inventory API.
 db/schema.sql               D1 tables: categories, products, leads, lead_events,
                             admin_sessions.
 db/seed.example.sql         Local dev fixtures. Never apply to production.
