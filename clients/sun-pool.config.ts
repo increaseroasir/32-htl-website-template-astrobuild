@@ -470,6 +470,9 @@ export const rawClientConfig: ClientConfigInput = {
     ghl: { enabled: true },
     meta: { enabled: true },
     zaraz: { enabled: true },
-    sentry: { enabled: true },
+    // Sentry stays OFF until the SDK is actually wired (AL-15) — the
+    // schema refuses `true` so the privacy policy cannot claim monitoring
+    // that does not exist.
+    sentry: { enabled: false },
   },
 };
