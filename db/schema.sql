@@ -15,38 +15,22 @@
 
 
 -- ------------------------------------------------------------
--- categories — a DERIVED MIRROR of client.config.ts. Not a source.
---
--- Read this before adding a column: there is deliberately NO
--- `enabled` flag here. Whether a category exists on this site is
--- decided in ONE place — the `categories` block of the client
--- config — and this table is regenerated from it by
--- syncCategories() in src/lib/db.ts.
---
--- If enablement lived here too, a site could have saunas ON in the
--- database and OFF in config, which is precisely the class of split
--- truth this template exists to prevent. The table exists so
--- products have a category to join against and so the admin
--- dropdown has rows to list — nothing more.
+-- NOTE: there is deliberately NO categories table. Category labels,
+-- segments and ordering live in ONE place — the `categories` block
+-- of the client config. A database mirror of that config was removed
+-- (it had zero readers) so a site can never have saunas ON in the
+-- database and OFF in config — the class of split truth this
+-- template exists to prevent.
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS categories (
-  slug        TEXT PRIMARY KEY,        -- 'hot-tub'   (config + catalog key)
-  label       TEXT NOT NULL,           -- 'Hot Tubs'  (mirrored from config)
-  segment     TEXT NOT NULL UNIQUE,    -- 'hot-tubs'  (URL segment)
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  synced_at   INTEGER NOT NULL         -- last time config was mirrored here
-);
-
 
 -- ------------------------------------------------------------
 -- products — the inventory.
 --
--- `category` is NOT foreign-keyed to categories(slug) on purpose.
+-- `category` is a plain TEXT column, not a foreign key, on purpose.
 -- Turning a category off must never delete or block a client's
 -- product rows; it makes them invisible on the site while the data
 -- survives. Visibility is enforced in the query layer against the
--- config array, and syncCategories() REPORTS orphans rather than
--- destroying them.
+-- config array.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS products (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,

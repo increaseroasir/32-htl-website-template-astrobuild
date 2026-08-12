@@ -96,7 +96,7 @@ src/lib/meta-capi.ts        Conversions API. Hashing + the dedup event_id.
 src/lib/ghl.ts              GoHighLevel contact upsert.
 src/lib/hash.ts             SHA-256 with Meta's normalisation rules.
 src/lib/admin-auth.ts       Reused Sun Pool auth. Do not redesign.
-db/schema.sql               D1 tables: categories, products, leads, lead_events,
+db/schema.sql               D1 tables: products, leads, lead_events,
                             admin_sessions.
 db/seed.example.sql         Local dev fixtures. Never apply to production.
 ```
@@ -135,7 +135,7 @@ These are not conventions to remember — the build fails if they are violated.
 | A disabled category cannot serve products | Every public query filters by `enabledCategorySlugs` — the same array the nav uses |
 | Drafts and deleted rows never reach a customer | Public status filter is an allow-list (`available`, `pending`, `sold`), not a deny-list |
 | Turning a category off never destroys data | Products stay in the table, become invisible, and are reported as orphans |
-| The categories table cannot become a second source of truth | It has no `enabled` column; config decides, the table mirrors |
+| Categories cannot become a second source of truth | There is no categories table; the config block is the only place they exist |
 
 ---
 
@@ -160,18 +160,17 @@ npm run db:apply:remote     # production - operator only
 
 ### Categories are config, not data
 
-`db/schema.sql` has a `categories` table, but it is a **one-way mirror of
-`client.config.ts`**, not a source of truth. It deliberately has no `enabled`
-column. Whether this site sells saunas is decided in exactly one place - the
-config - and `syncCategories()` rewrites the table to match.
+There is **no categories table**. Whether this site sells saunas is decided
+in exactly one place - the `categories` block of `client.config.ts`. Labels,
+URL segments and ordering all live there too.
 
 Every public query filters `category IN (...)` using `enabledCategorySlugs`,
 the same array the header nav renders from. So a sauna product can sit in the
 database, fully valid, and never appear anywhere on the site. Flip one config
 line and it appears in the API, the category route, and the nav together.
 
-Turning a category off never deletes anything. The rows stay; they become
-invisible; `syncCategories()` reports them as orphans so you know they exist.
+Turning a category off never deletes anything. The product rows stay; they
+simply become invisible until the category is enabled again.
 
 ### Astro 6 changed how bindings are read
 
