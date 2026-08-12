@@ -188,7 +188,16 @@ export async function sendMetaCapi(
     try {
       received = (JSON.parse(text) as { events_received?: number }).events_received;
     } catch {
-      /* Meta returned something unexpected but a 2xx; treat as sent. */
+      // A 2xx whose body we cannot parse is treated as sent, but never
+      // silently: without this line "did Meta actually count it?" is
+      // unanswerable from the logs (I-11).
+      console.warn('[capi] 2xx with unparseable body — events_received unknown:', text.slice(0, 200));
+    }
+    if (received !== undefined && received !== 1) {
+      // We send exactly one event per payload; anything else means Meta
+      // did not count what we think it counted (I-10 — log only for now,
+      // behaviour review at AL-4).
+      console.warn(`[capi] events_received=${received}, expected 1 (event may not have counted)`);
     }
     return { ok: true, status: res.status, detail: text.slice(0, 300), eventsReceived: received };
   } catch (error) {

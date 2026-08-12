@@ -99,13 +99,22 @@ export const POST: APIRoute = async ({ request }) => {
   // A missing secret means NOT CONFIGURED, never OPEN. This endpoint can
   // spend a client's ad budget by teaching their pixel the wrong thing.
   if (!e.STAGE_WEBHOOK_SECRET) {
+    // The CRM is calling but the secret was never set: every stage event —
+    // the entire value ladder — is being dropped (K-01 class).
+    console.error('[stage] REFUSED — STAGE_WEBHOOK_SECRET not set; stage events are being dropped');
     return json({ ok: false, error: 'Stage webhook is not configured.' }, 503);
   }
   const token = bearer(request);
   if (!token || !secretsMatch(token, e.STAGE_WEBHOOK_SECRET)) {
+    // Either the CRM webhook is misconfigured (every event lost until fixed)
+    // or someone is probing. Both deserve a line (K-05). Never log the token.
+    console.warn('[stage] auth reject — bearer token missing or wrong');
     return json({ ok: false, error: 'Unauthorized.' }, 401);
   }
-  if (!db) return json({ ok: false, error: 'Database is not configured.' }, 503);
+  if (!db) {
+    console.error('[stage] REFUSED — D1 unbound; stage event dropped');
+    return json({ ok: false, error: 'Database is not configured.' }, 503);
+  }
 
   let body: StageBody;
   try {
@@ -134,20 +143,51 @@ export const POST: APIRoute = async ({ request }) => {
     e as unknown as Record<string, string | undefined>,
     body.value ?? body.actual_sale_value,
   );
-  if (!resolved.ok) return json({ ok: false, error: resolved.error }, 400);
+  if (!resolved.ok) {
+    console.warn(`[stage] ${eventName} rejected — ${resolved.error}`);
+    return json({ ok: false, error: resolved.error }, 400);
+  }
+  if (resolved.malformedEnvKey) {
+    console.warn(
+      `[capi] ${resolved.malformedEnvKey} is set but not a usable number — using default ${resolved.value} (K-06)`,
+    );
+  }
+  if (resolved.source === 'default') {
+    // K-06: the ladder is running on the TEMPLATE's numbers, not this
+    // client's. Meta is being trained on another business's economics —
+    // that must be visible in every `wrangler tail`.
+    console.warn(
+      `[capi] ${eventName} fired with DEFAULT value ${resolved.value} — set ${definition.envKey} to this client's real number (K-06)`,
+    );
+  }
+  if (e.META_TEST_EVENT_CODE) {
+    console.warn('[capi] META_TEST_EVENT_CODE is set — this event is a TEST event and will NOT count as a conversion; delete the secret after the smoke test');
+  }
 
-  const lead = await db
-    .prepare(
-      `SELECT uuid, first_name, last_name, email, phone, category, product_slug, source_page,
-              first_touch_fbclid, fbp, fbc, ip_address, user_agent
-         FROM leads WHERE uuid = ?`,
-    )
-    .bind(leadUuid)
-    .first<LeadRow>();
+  let lead: LeadRow | null;
+  try {
+    lead = await db
+      .prepare(
+        `SELECT uuid, first_name, last_name, email, phone, category, product_slug, source_page,
+                first_touch_fbclid, fbp, fbc, ip_address, user_agent
+           FROM leads WHERE uuid = ?`,
+      )
+      .bind(leadUuid)
+      .first<LeadRow>();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    // 502 so the CRM retries — the deliberate retry semantics of this
+    // endpoint (I-15; verification confirmed the 502 path is load-bearing).
+    console.error('[stage] lead lookup failed:', detail);
+    return json({ ok: false, error: 'Lookup failed — retry.' }, 502);
+  }
 
   // No lead row means no identity data, which means an event Meta cannot
   // match to anyone. Saying so is more useful than firing a blank event.
-  if (!lead) return json({ ok: false, error: 'Unknown leadUuid.' }, 404);
+  if (!lead) {
+    console.warn('[stage] unknown leadUuid — event dropped:', leadUuid);
+    return json({ ok: false, error: 'Unknown leadUuid.' }, 404);
+  }
 
   const now = Date.now();
 
@@ -166,10 +206,17 @@ export const POST: APIRoute = async ({ request }) => {
      is NOT safe is generating a fresh id on retry, which is how one
      booked appointment becomes three.
      --------------------------------------------------------------- */
-  const existing = await db
-    .prepare('SELECT event_id, fired_server_side FROM lead_events WHERE lead_uuid = ? AND event_name = ?')
-    .bind(leadUuid, eventName)
-    .first<{ event_id: string; fired_server_side: number }>();
+  let existing: { event_id: string; fired_server_side: number } | null;
+  try {
+    existing = await db
+      .prepare('SELECT event_id, fired_server_side FROM lead_events WHERE lead_uuid = ? AND event_name = ?')
+      .bind(leadUuid, eventName)
+      .first<{ event_id: string; fired_server_side: number }>();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error('[stage] event lookup failed:', detail);
+    return json({ ok: false, error: 'Lookup failed — retry.' }, 502);
+  }
 
   let eventId: string;
 
@@ -203,7 +250,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (/UNIQUE|constraint/i.test(detail)) {
         return json({ ok: true, leadUuid, event: eventName, duplicate: true });
       }
-      console.error('[api/lead-stage] event insert failed:', detail);
+      console.error('[stage] event insert failed:', detail);
       return json({ ok: false, error: 'Could not record the event.' }, 500);
     }
   }
@@ -212,6 +259,11 @@ export const POST: APIRoute = async ({ request }) => {
     site.integrations.meta.enabled && Boolean(e.META_PIXEL_ID && e.META_CAPI_ACCESS_TOKEN);
 
   if (!metaEnabled) {
+    if (site.integrations.meta.enabled) {
+      // Enabled in config, secrets missing: the CRM is faithfully reporting
+      // stage changes and every one of them is going nowhere (K-02).
+      console.error('[capi] enabled in config but META_PIXEL_ID/META_CAPI_ACCESS_TOKEN missing — stage event NOT fired (K-02)');
+    }
     return json({ ok: true, leadUuid, event: eventName, sent: false, reason: 'meta disabled' });
   }
 
@@ -250,27 +302,36 @@ export const POST: APIRoute = async ({ request }) => {
     },
   );
 
-  await db
-    .prepare('UPDATE lead_events SET fired_server_side = ?, payload = ? WHERE event_id = ?')
-    .bind(
-      capiResult.ok ? 1 : 0,
-      JSON.stringify({
-        value: resolved.value,
-        valueSource: resolved.source,
-        actionSource: definition.actionSource,
-        capi: {
-          ok: capiResult.ok,
-          status: capiResult.status,
-          received: capiResult.eventsReceived,
-          detail: capiResult.ok ? '' : capiResult.detail,
-        },
-      }),
-      eventId,
-    )
-    .run();
+  try {
+    await db
+      .prepare('UPDATE lead_events SET fired_server_side = ?, payload = ? WHERE event_id = ?')
+      .bind(
+        capiResult.ok ? 1 : 0,
+        JSON.stringify({
+          value: resolved.value,
+          valueSource: resolved.source,
+          actionSource: definition.actionSource,
+          capi: {
+            ok: capiResult.ok,
+            status: capiResult.status,
+            received: capiResult.eventsReceived,
+            detail: capiResult.ok ? '' : capiResult.detail,
+          },
+        }),
+        eventId,
+      )
+      .run();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    // The row still says fired_server_side = 0, so the CRM's retry will
+    // re-send under the SAME event_id — Meta dedups; nothing double-counts.
+    // 502 keeps that retry coming rather than stranding the record.
+    console.error('[stage] audit UPDATE failed after send:', detail);
+    return json({ ok: false, error: 'Recorded remotely but not locally — retry.' }, 502);
+  }
 
   if (!capiResult.ok) {
-    console.error('[api/lead-stage] Meta CAPI failed:', capiResult.status, capiResult.detail);
+    console.error('[stage] Meta CAPI failed:', capiResult.status, capiResult.detail);
     // 502, not 200 — a failed send SHOULD be retried, and the row above is
     // left at fired_server_side = 0 so the retry re-sends under the same
     // event_id rather than skipping it as a duplicate.

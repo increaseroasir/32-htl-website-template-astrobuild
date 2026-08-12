@@ -115,15 +115,26 @@ export function isStageEvent(value: string): value is StageEventName {
 }
 
 /** A malformed secret must not silently become 0 — it must be ignored. */
-function parseEnvValue(raw: string | undefined): number | null {
-  if (raw === undefined || raw === null || raw.trim() === '') return null;
+function parseEnvValue(raw: string | undefined): { kind: 'absent' } | { kind: 'malformed' } | { kind: 'ok'; value: number } {
+  if (raw === undefined || raw === null || raw.trim() === '') return { kind: 'absent' };
   const n = Number(raw);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return n;
+  if (!Number.isFinite(n) || n < 0) return { kind: 'malformed' };
+  return { kind: 'ok', value: n };
 }
 
 export type ValueResolution =
-  | { ok: true; value: number; source: 'supplied' | 'env' | 'default' }
+  | {
+      ok: true;
+      value: number;
+      source: 'supplied' | 'env' | 'default';
+      /**
+       * Set when the env override existed but was unusable (not a number,
+       * or negative) and the default was used instead. The caller MUST log
+       * it with the var name — a typo'd secret silently becoming another
+       * business's default economics is K-06's exact failure mode.
+       */
+      malformedEnvKey?: string;
+    }
   | { ok: false; error: string };
 
 /**
@@ -151,10 +162,17 @@ export function resolveEventValue(
     return { ok: true, value: n, source: 'supplied' };
   }
 
-  const fromEnv = def.envKey ? parseEnvValue(env[def.envKey]) : null;
-  if (fromEnv !== null) return { ok: true, value: fromEnv, source: 'env' };
+  const fromEnv = def.envKey ? parseEnvValue(env[def.envKey]) : ({ kind: 'absent' } as const);
+  if (fromEnv.kind === 'ok') return { ok: true, value: fromEnv.value, source: 'env' };
 
-  if (def.defaultValue !== null) return { ok: true, value: def.defaultValue, source: 'default' };
+  if (def.defaultValue !== null) {
+    return {
+      ok: true,
+      value: def.defaultValue,
+      source: 'default',
+      ...(fromEnv.kind === 'malformed' && def.envKey ? { malformedEnvKey: def.envKey } : {}),
+    };
+  }
 
   return {
     ok: false,
