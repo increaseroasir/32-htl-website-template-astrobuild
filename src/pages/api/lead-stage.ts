@@ -39,6 +39,7 @@ import type { APIRoute } from 'astro';
 import { getDb } from '../../lib/db';
 import { site } from '../../config';
 import { getEnv } from '../../lib/admin-auth';
+import { secretsMatch } from '../../lib/secrets';
 import { sendMetaCapi, deriveFbc, type CapiResult } from '../../lib/meta-capi';
 import { CAPI_EVENTS, isStageEvent, resolveEventValue, STAGE_EVENT_NAMES } from '../../lib/capi-events';
 
@@ -73,18 +74,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-}
-
-/**
- * Length-independent comparison. The admin password check elsewhere is a
- * plain !== and is documented as such; this one is new code, so it does not
- * inherit that weakness.
- */
-function secretsMatch(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 function bearer(request: Request): string {

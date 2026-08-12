@@ -40,6 +40,7 @@ import {
   destroySession,
   adminConfigured,
   getEnv,
+  secretsMatch,
 } from '../../lib/admin-auth';
 
 export const prerender = false;
@@ -247,7 +248,10 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (!adminConfigured()) {
       return json({ ok: false, error: 'Admin is not configured.' }, 503);
     }
-    if (body.password !== getEnv().ADMIN_PASSWORD) {
+    if (
+      typeof body.password !== 'string' ||
+      !secretsMatch(body.password, getEnv().ADMIN_PASSWORD ?? '')
+    ) {
       return json({ ok: false, error: 'Invalid password.' }, 401);
     }
     const token = await createSession(db);
