@@ -295,6 +295,12 @@ npm run build && npm run gate
 
 `npm run deploy` runs both for you and will not deploy if the gate fails.
 
+**What a healthy run looks like (the acceptance rule):** on a client-mode
+config, **zero failures**. On the blank template, **exactly three** — `Config
+is in client mode`, `No placeholder facts`, `At least one category enabled` —
+the deliberate locks that keep the template undeployable. Anything else red,
+in either mode, is a real defect. The harness asserts this set exactly.
+
 It checks two different things, because they catch different bugs. **Source
 checks** read the repo — a hex code typed into a component, a category slug
 hardcoded, an admin link, a form field missing `autocomplete`. **Rendered

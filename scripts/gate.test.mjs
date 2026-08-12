@@ -447,7 +447,54 @@ pending('Logo present, light and knockout', 'work order item 11');
 pending('Mobile menu present and wired', 'work order item 12 — needs a built fixture');
 pending('Complete LocalBusiness on every page', 'work order item 12 — needs a built fixture');
 pending('Autocomplete on every PII field', 'work order item 17');
-pending('Sitemap excludes admin and disabled categories', 'work order item 19');
+pending('Sitemap excludes admin', 'work order item 19 — needs a built fixture');
+pending('Sitemap has no disabled categories', 'work order item 19 — needs a built fixture');
+pending('Sitemap excludes internal routes', 'AL-3 — needs a built fixture (C10 rendered half)');
+
+/**
+ * THE SEAL (C13 / decision A.2): the blank template fails on EXACTLY its
+ * three deliberate locks — set equality, not subset. This is the run's
+ * own definition of done: every other check green on the template tree,
+ * and a healthy gate run finally has a machine-checked meaning. Any new
+ * check that fails on the template tree breaks THIS test first.
+ */
+test('template mode fails on exactly the three locks — set equality', async () => {
+  const run = await withFixture(
+    null,
+    cleanManifest({
+      deployMode: 'template',
+      identity: { name: 'CLIENT NAME HERE', siteUrl: 'https://example.com', foundedYear: 2000 },
+      contact: { phone: '+15555550100', email: null },
+      address: {
+        street: '000 Placeholder Street',
+        city: 'City',
+        postalCode: '00000',
+        latitude: 0,
+        longitude: 0,
+      },
+      categories: [],
+      nav: {
+        header: [
+          { label: 'Find Your Match', href: '/find-your-match' },
+          { label: 'Inventory', href: '/inventory' },
+        ],
+        footer: [{ label: 'Inventory', href: '/inventory' }],
+        primaryCta: { label: 'Shop Inventory', href: '/inventory' },
+        legalItems: [{ label: 'Privacy Policy', href: '/privacy-policy' }],
+      },
+    }),
+  );
+  const failures = run.results.filter((r) => r.level === 'FAIL').map((r) => r.check).sort();
+  const LOCKS = ['At least one category enabled', 'Config is in client mode', 'No placeholder facts'];
+  const extra = failures.filter((f) => !LOCKS.includes(f));
+  const missing = LOCKS.filter((l) => !failures.includes(l));
+  if (extra.length || missing.length) {
+    throw new Error(
+      `template lock set mismatch — extra failures: [${extra.join(', ') || 'none'}], missing locks: [${missing.join(', ') || 'none'}]`,
+    );
+  }
+  if (run.code === 0) throw new Error('the locks must keep exit 1 — deploy stays chained shut');
+});
 
 /* ------------------------------------------------------------------ */
 /* Main                                                                */

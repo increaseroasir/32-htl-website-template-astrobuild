@@ -487,9 +487,23 @@ const PLACEHOLDERS = [
 
 function configChecks(m) {
   // --- The big one -------------------------------------------------
+  //
+  // ACCEPTANCE, DECIDED (A.2 / G-19, G-21): "clean" means — on a
+  // client-mode config, 0 failures; on the template config, exactly the
+  // three deliberate locks ('Config is in client mode', 'No placeholder
+  // facts', 'At least one category enabled') and nothing else. The locks
+  // keep exit 1 on purpose: `npm run deploy`'s build && gate && deploy
+  // chain must stay physically unable to ship the blank template. The
+  // category lock is PART of the lock set — deliberately stricter than
+  // the schema, because the gate only ever runs pre-deploy. No special
+  // exit code unless CI ever needs a green run on the bare template
+  // (none exists). The harness asserts this set with SET EQUALITY.
+  //
+  // ONE name per check (G-14): pass and fail report the same name, or
+  // the pending ledger and history can never match up.
   if (m.deployMode !== 'client') {
     fail(
-      'Config is not in client mode',
+      'Config is in client mode',
       `deployMode is "${m.deployMode}". This is the un-customised template — it must never reach a live domain.`,
     );
   } else {
