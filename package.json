@@ -18,6 +18,7 @@
     "gate": "node scripts/gate.mjs",
     "gate:fast": "node scripts/gate.mjs --no-render",
     "gate:test": "node scripts/gate.test.mjs",
+    "test:lib": "node --import ./tests/lib/register.mjs --test \"tests/lib/*.test.mjs\"",
     "deploy": "npm run build && npm run gate && wrangler deploy"
   },
   "dependencies": {

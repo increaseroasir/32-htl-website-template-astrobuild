@@ -21,6 +21,7 @@
 import { useState, type FormEvent } from 'react';
 import { useStore } from '@nanostores/react';
 import { quizStore, selectCategory, resetQuiz } from '../../stores/quiz';
+import { CONSENT_VERSION, consentTextFor } from '../../config/consent';
 
 export interface QuizOption {
   slug: string;
@@ -109,7 +110,14 @@ export default function Quiz({
       const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, category, productSlug, sourcePage, eventId: clientEventId }),
+        body: JSON.stringify({
+          ...form,
+          category,
+          productSlug,
+          sourcePage,
+          eventId: clientEventId,
+          consentVersion: CONSENT_VERSION,
+        }),
       });
 
       const data = (await res.json()) as {
@@ -294,11 +302,7 @@ export default function Quiz({
           {submitting ? 'Sending…' : 'Get my pricing →'}
         </button>
 
-        <p className="quiz-consent">
-          By submitting, I agree that {businessName} may call, text, and email me about my
-          enquiry, including with automated messages. Consent is not a condition of purchase.
-          Reply STOP to opt out.
-        </p>
+        <p className="quiz-consent">{consentTextFor(CONSENT_VERSION, businessName)}</p>
       </form>
     </section>
   );

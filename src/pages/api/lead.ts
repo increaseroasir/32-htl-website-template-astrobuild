@@ -18,6 +18,7 @@
 import type { APIRoute } from 'astro';
 import { getDb, isEnabledCategory, inventoryStatus } from '../../lib/db';
 import { site, derived } from '../../config';
+import { consentTextFor } from '../../config/consent';
 import { getEnv } from '../../lib/admin-auth';
 import { sendMetaCapi, deriveFbc, type CapiResult } from '../../lib/meta-capi';
 import { syncToGhl, buildGhlTags, type GhlResult } from '../../lib/ghl';
@@ -34,6 +35,7 @@ interface LeadBody {
   productSlug?: unknown;
   sourcePage?: unknown;
   eventId?: unknown;
+  consentVersion?: unknown;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -94,6 +96,16 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   }
   const category = requested;
 
+  // Consent: the version is resolved to its exact wording SERVER-SIDE.
+  // Client-supplied text is never trusted; an unknown or missing version is
+  // a stale or tampered client and the lead is refused — a contactable lead
+  // with no provable consent record is legal exposure, not a lead.
+  const consentVersion = clean(body.consentVersion, 40);
+  const consentText = consentVersion ? consentTextFor(consentVersion, site.identity.name) : null;
+  if (!consentText) {
+    return json({ ok: false, error: 'Please refresh the page and submit again.' }, 400);
+  }
+
   const problems: string[] = [];
   if (name.length < 2) problems.push('a name');
   if (phone.length < 10) problems.push('a phone number');
@@ -124,8 +136,9 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
            first_touch_fbclid, first_touch_gclid, first_touch_ttclid,
            last_touch_utm_source, last_touch_utm_campaign,
            fbp, fbc, ip_address, user_agent,
+           consent_version, consent_text, consent_url,
            created_at, updated_at
-         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
          ON CONFLICT(uuid) DO UPDATE SET
            first_name = excluded.first_name,
            last_name  = excluded.last_name,
@@ -137,6 +150,9 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
            source_page = excluded.source_page,
            last_touch_utm_source   = excluded.last_touch_utm_source,
            last_touch_utm_campaign = excluded.last_touch_utm_campaign,
+           consent_version = excluded.consent_version,
+           consent_text    = excluded.consent_text,
+           consent_url     = excluded.consent_url,
            updated_at = excluded.updated_at`,
       )
       .bind(
@@ -163,6 +179,9 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
         cookies.get('_fbc')?.value ?? '',
         clientAddress ?? '',
         request.headers.get('user-agent') ?? '',
+        consentVersion,
+        consentText,
+        sourcePage,
         now,
         now,
       )
