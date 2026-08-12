@@ -359,7 +359,7 @@ const displaySchema = z.object({
  * and is correct every January without anyone remembering.
  *
  * Sections: announcement, hero, stats, offercard, categories, products,
- * imagecards, benefits, gallery, reviews, comparison, promise, splitcards,
+ * imagecards, benefits, reviews, comparison, promise, splitcards,
  * steps, faq, ctaband, cta, trust, bignumber.
  */
 const homepageSchema = z.object({

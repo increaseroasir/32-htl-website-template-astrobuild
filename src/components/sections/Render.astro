@@ -286,26 +286,6 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
           </section>
         );
 
-      /* -------------------- GALLERY -------------------- */
-      case 'gallery':
-        return (
-          <section class="sx-section wrap">
-            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
-            <div class="sx-gallery">
-              {section.images.map((img, n) => (
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  width="340"
-                  height="255"
-                  loading={n < 2 ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-              ))}
-            </div>
-          </section>
-        );
-
       /* -------------------- REVIEWS -------------------- */
       case 'reviews':
         return (
@@ -821,17 +801,6 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
     display: grid;
     gap: 1.15rem;
   }
-  .sx-gallery {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.6rem;
-  }
-  .sx-gallery img {
-    width: 100%;
-    height: auto;
-    border-radius: calc(var(--brand-radius-card) / 2);
-    object-fit: cover;
-  }
 
   /* ---------- image cards ---------- */
   .sx-imagecard {
@@ -1195,9 +1164,6 @@ const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn
     }
     .sx-grid {
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-    .sx-gallery {
-      grid-template-columns: repeat(3, 1fr);
     }
     .sx-promise-inner {
       grid-template-columns: auto 1fr;

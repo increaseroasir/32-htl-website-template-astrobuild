@@ -16,7 +16,6 @@
  *   cta         — placed high. A visitor ready to convert should not have to
  *                 scroll to find the form.
  *   benefits    — outcome-framed, not feature-framed.
- *   gallery     — proof of scale. Real installs, never stock photography.
  *   testimonials— first name + last initial, and a SPECIFIC detail. Specifics
  *                 are what make a testimonial read as real.
  *   bignumber   — one figure, stated precisely. "2,400" beats "thousands".

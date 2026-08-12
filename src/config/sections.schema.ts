@@ -208,13 +208,6 @@ const benefitsSchema = z.object({
     .min(1),
 });
 
-const gallerySchema = z.object({
-  type: z.literal('gallery'),
-  heading: z.string().min(1).nullable().default(null),
-  /** Proof of scale. Real photos, never stock. */
-  images: z.array(z.object({ src: absoluteAsset, alt: z.string().min(1) })).min(1),
-});
-
 /**
  * Reviews.
  *
@@ -371,7 +364,6 @@ export const sectionSchema = z.discriminatedUnion('type', [
   productsSchema,
   imageCardsSchema,
   benefitsSchema,
-  gallerySchema,
   reviewsSchema,
   comparisonSchema,
   promiseSchema,
