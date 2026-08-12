@@ -1,10 +1,9 @@
 -- ============================================================
 -- D1 SCHEMA — hot tub store template
 --
--- SOURCE OF db/migrations/0001_init.sql. This file is the human-readable
--- reference only — future schema changes are NEW migration files in
--- db/migrations/ (applied with npm run db:migrate:local|remote),
--- never edits here.
+-- Apply with:
+--   npm run db:apply:local     (local dev database)
+--   npm run db:apply:remote    (production — operator only)
 --
 -- Field names are deliberately IDENTICAL to the existing Sun Pool
 -- admin API (functions/api/admin.js). Phase 6 reuses that auth and

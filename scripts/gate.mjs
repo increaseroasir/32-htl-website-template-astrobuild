@@ -305,6 +305,30 @@ async function sourceChecks() {
   }
   if (tokenish.length) fail('No credentials committed in source', tokenish.join(', '));
   else pass('No credentials committed in source');
+
+  // --- 5. D1 migrations configured ---------------------------------
+  // A schema change on a live client database is impossible without a
+  // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
+  // tables entirely, so an edit to schema.sql never reaches a client.
+  // The baseline must exist BEFORE the first client DB does.
+  const wranglerToml = existsSync(join(ROOT, 'wrangler.toml'))
+    ? await readFile(join(ROOT, 'wrangler.toml'), 'utf8')
+    : '';
+  let migrationCount = 0;
+  try {
+    migrationCount = (await readdir(join(ROOT, 'db', 'migrations'))).filter((f) =>
+      f.endsWith('.sql'),
+    ).length;
+  } catch {
+    /* dir missing → count stays 0 */
+  }
+  if (!wranglerToml.includes('migrations_dir')) {
+    fail('D1 migrations configured', 'wrangler.toml has no migrations_dir entry.');
+  } else if (migrationCount === 0) {
+    fail('D1 migrations configured', 'db/migrations/ is missing or has no .sql files.');
+  } else {
+    pass('D1 migrations configured', `${migrationCount} migration file(s)`);
+  }
 }
 
 /* ------------------------------------------------------------------ */

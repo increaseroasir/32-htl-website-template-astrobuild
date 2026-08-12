@@ -97,6 +97,10 @@ export async function withFixture(mutate, manifest = cleanManifest()) {
   const dir = await mkdtemp(join(tmpdir(), 'gate-fixture-'));
   try {
     await cp(join(ROOT, 'src'), join(dir, 'src'), { recursive: true });
+    // The gate also reads wrangler.toml and db/migrations (the D1
+    // migrations check); a fixture without them fails for the wrong reason.
+    await cp(join(ROOT, 'wrangler.toml'), join(dir, 'wrangler.toml'));
+    await cp(join(ROOT, 'db'), join(dir, 'db'), { recursive: true });
     await mkdir(join(dir, 'dist'), { recursive: true });
     const manifestPath = join(dir, 'dist', 'gate-manifest.json');
     if (mutate) await mutate({ dir, manifest });
@@ -296,6 +300,22 @@ test('PASSES on rgb(var(--brand-x-rgb) / a)', async () => {
 
 test('PASSES on the two whitelisted material neutrals', async () => {
   assertPasses(await withFixture(onlyStyles('.a{background:linear-gradient(155deg,#eef2f8,#e2e9f4)}')), COLOUR);
+});
+
+/**
+ * A schema change with no path to a live client DB (J-08). The fixture
+ * removes db/migrations; the check must notice before the first client
+ * database exists, not after.
+ */
+test('FAILS when db/migrations is missing', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    await rm(join(dir, 'db', 'migrations'), { recursive: true, force: true });
+  });
+  assertFails(run, 'D1 migrations configured');
+});
+
+test('PASSES with the shipped 0001 baseline in place', async () => {
+  assertPasses(await withFixture(null), 'D1 migrations configured');
 });
 pending('No category slugs hardcoded outside src/config', 'work order item 20');
 pending('No /admin link in any component', 'work order item 20');
