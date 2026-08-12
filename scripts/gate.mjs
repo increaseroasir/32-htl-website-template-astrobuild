@@ -543,24 +543,6 @@ function configChecks(m) {
   }
   if (!results.some((r) => r.check === 'One label per destination')) pass('One label per destination');
 
-  // --- A monthly payment is a credit offer -------------------------
-  // The schema already refuses this combination at build time. It is
-  // checked again here because the gate is what runs against a manifest
-  // from a build somebody else made, and this is the one defect on the
-  // list that ships a regulated claim rather than a broken link.
-  if (m.display?.showMonthly && !m.financingEnabled) {
-    fail(
-      'Monthly payments require financing terms',
-      'display.showMonthly is true but financing is null. "$149/mo" with no lender, ' +
-        'no APR and no disclaimer is an offer stated without its terms.',
-    );
-  } else {
-    pass(
-      'Monthly payments require financing terms',
-      m.display?.showMonthly ? 'shown, financing configured' : 'not shown',
-    );
-  }
-
   const ctaHref = m.nav.primaryCta.href;
   if (!m.nav.header.some((n) => n.href === ctaHref) && ctaHref !== '/inventory') {
     warn('Primary CTA destination', `${ctaHref} is not in the nav. Confirm it exists.`);

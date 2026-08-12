@@ -288,6 +288,12 @@ const financingSchema = z.object({
   applyUrl: httpsUrl.nullable().default(null),
   /** Qualifying terms. Required — see above. */
   disclaimer: z.string().min(1),
+  /**
+   * Monthly payments on product cards. Lives INSIDE financing on purpose:
+   * a monthly figure is a credit offer, and with no financing block this
+   * field does not exist — the unsafe combination cannot be written.
+   */
+  showMonthly: z.boolean().default(false),
 });
 
 /* ------------------------------------------------------------------ */
@@ -295,23 +301,15 @@ const financingSchema = z.object({
 /* ------------------------------------------------------------------ */
 
 /**
- * A price and a monthly payment are two different claims.
- *
- * "$8,995" is a fact about a unit. "$149/mo" is a CREDIT OFFER, and an offer
- * stated without its terms is the thing regulators act on — which is why the
- * financing block makes `disclaimer` required. A monthly figure sitting in
- * the product row of a client with no financing block therefore advertises
- * an offer that has no lender, no APR and no disclaimer behind it.
- *
- * These two switches decide it once, here, instead of at every place a price
- * is rendered. `showMonthly` defaults to FALSE: the safe state is silence,
- * and a client who has financing turns it on deliberately.
+ * Decided once, here, instead of at every place a price is rendered.
+ * (Monthly payments are `financing.showMonthly`: a monthly figure is a
+ * credit offer, so the switch lives inside the block that holds its terms.)
  */
-const displaySchema = z.object({
+// strictObject: writing `showMonthly` here — where it lived before it moved
+// inside financing — must fail LOUDLY, not be silently stripped.
+const displaySchema = z.strictObject({
   /** Cash price. Off shows "Ask for current pricing" instead. */
   showPrice: z.boolean().default(true),
-  /** Monthly payment. Requires a financing block — enforced below. */
-  showMonthly: z.boolean().default(false),
 });
 
 /* ------------------------------------------------------------------ */
@@ -389,7 +387,7 @@ export const clientConfigSchema = z
     /** null = this client has no financing page. The route 404s. */
     financing: financingSchema.nullable().default(null),
     /** What a price is allowed to say. See displaySchema. */
-    display: displaySchema.default({ showPrice: true, showMonthly: false }),
+    display: displaySchema.default({ showPrice: true }),
     /**
      * The homepage, as an ordered list of sections. An empty default means a
      * config that predates this field still builds — it just has no homepage
@@ -437,16 +435,6 @@ export const clientConfigSchema = z
     // A monthly payment is a credit offer. Advertising one with no financing
     // block means advertising terms that do not exist — so the BUILD stops,
     // rather than the site shipping and the gate catching it later.
-    if (cfg.display.showMonthly && cfg.financing === null) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['display', 'showMonthly'],
-        message:
-          'display.showMonthly is true but financing is null. A monthly payment is a credit offer; ' +
-          'without a financing block it has no lender, no terms and no disclaimer. ' +
-          'Fill in financing, or set showMonthly to false.',
-      });
-    }
 
     // Nav may not link to a category route that is not enabled.
     // (This is what would have caught the saunas nav link.)

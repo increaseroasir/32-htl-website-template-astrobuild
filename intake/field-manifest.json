@@ -1120,6 +1120,19 @@
       "example": null
     },
     {
+      "path": "financing.showMonthly",
+      "type": "boolean",
+      "required": false,
+      "nullable": false,
+      "default": false,
+      "source": "ask",
+      "group": "financing",
+      "label": "Show monthly payments",
+      "help": "A monthly payment is a CREDIT OFFER, so this switch lives inside the financing block: no block, no flag.",
+      "control": "checkbox",
+      "example": false
+    },
+    {
       "path": "display.showPrice",
       "type": "boolean",
       "required": false,
@@ -1131,19 +1144,6 @@
       "help": "Off shows \"Ask for current pricing\" instead of a number. A price shown is a claim; some dealers may not publish one.",
       "control": "checkbox",
       "example": true
-    },
-    {
-      "path": "display.showMonthly",
-      "type": "boolean",
-      "required": false,
-      "nullable": false,
-      "default": false,
-      "source": "ask",
-      "group": "financing",
-      "label": "Show monthly payments",
-      "help": "A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.",
-      "control": "checkbox",
-      "example": false
     },
     {
       "path": "homepage.sections",

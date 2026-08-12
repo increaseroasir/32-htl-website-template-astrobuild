@@ -68,7 +68,7 @@ export function cleanManifest(overrides = {}) {
     },
     integrations: {},
     financingEnabled: false,
-    display: { showPrice: true, showMonthly: false },
+    display: { showPrice: true },
     logos: {
       nav: '/brand/logo-nav.svg',
       footer: '/brand/logo-footer.svg',
@@ -165,25 +165,6 @@ export const pending = (name, why) => cases.push({ name, why });
 /* ------------------------------------------------------------------ */
 /* The checks                                                          */
 /* ------------------------------------------------------------------ */
-
-/**
- * A monthly payment with no financing block behind it. The defect is in the
- * config, not the source, so the fixture only swaps the manifest.
- */
-test('FAILS when a monthly payment is shown with no financing block', async () => {
-  const run = await withFixture(null, cleanManifest({ financingEnabled: false, display: { showPrice: true, showMonthly: true } }));
-  assertFails(run, 'Monthly payments require financing terms');
-});
-
-test('PASSES when the monthly payment is shown and financing is configured', async () => {
-  const run = await withFixture(null, cleanManifest({ financingEnabled: true, display: { showPrice: true, showMonthly: true } }));
-  assertPasses(run, 'Monthly payments require financing terms');
-});
-
-test('PASSES when there is no financing block and no monthly payment', async () => {
-  const run = await withFixture(null);
-  assertPasses(run, 'Monthly payments require financing terms');
-});
 
 /**
  * An ungated link to a page that only exists for some clients. The defect is

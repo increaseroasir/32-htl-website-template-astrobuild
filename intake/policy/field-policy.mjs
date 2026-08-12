@@ -401,12 +401,12 @@ export const FIELD_POLICY = {
     help: 'Off shows "Ask for current pricing" instead of a number. A price shown is a claim; some dealers may not publish one.',
     example: true,
   },
-  'display.showMonthly': {
+  'financing.showMonthly': {
     source: 'ask',
     group: 'financing',
     control: 'checkbox',
     label: 'Show monthly payments',
-    help: 'A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.',
+    help: 'A monthly payment is a CREDIT OFFER, so this switch lives inside the financing block: no block, no flag.',
     example: false,
   },
 

@@ -2,8 +2,7 @@
  * Schema refusals (C14): two states that are lies must fail at parse —
  * Sentry enabled with no SDK behind it (a false privacy disclosure one
  * flag away), and a nav link to a financing page that does not exist.
- * Plus the two new colour tokens, and a regression pin on the original
- * showMonthly fence.
+ * Plus the two new colour tokens, and the structural showMonthly fence.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,11 +43,14 @@ test('REFUSED: nav link to /financing while financing is null', () => {
   assert.ok(messages.includes('/financing but financing is null'));
 });
 
-test('regression pin: showMonthly with null financing still refused', () => {
+test('showMonthly cannot exist outside financing — and the old spot fails loudly', () => {
+  // The field MOVED inside financing: with financing null it has nowhere to
+  // live. display is strict, so writing it where it used to live — the most
+  // likely mistake — is a parse ERROR naming the stray key, not a silent strip.
   const cfg = clone();
   cfg.display = { showPrice: true, showMonthly: true };
   const parsed = clientConfigSchema.safeParse(cfg);
   assert.equal(parsed.success, false);
   const messages = parsed.error.issues.map((i) => i.message).join(' ');
-  assert.ok(messages.includes('monthly payment is a credit offer'));
+  assert.ok(/unrecognized key/i.test(messages) && messages.includes('showMonthly'), messages);
 });

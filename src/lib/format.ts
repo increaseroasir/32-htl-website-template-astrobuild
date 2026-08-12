@@ -47,7 +47,8 @@ function formatPrice(value: number): string | null {
  * Module-private for the same reason as formatPrice.
  */
 function formatMonthly(value: number): string | null {
-  if (!site.display.showMonthly || site.financing === null) return null;
+  // No financing block → the field does not exist → no monthly claim.
+  if (!site.financing?.showMonthly) return null;
   if (!Number.isFinite(value) || value <= 0) return null;
   return `${usd.format(value)}/mo`;
 }

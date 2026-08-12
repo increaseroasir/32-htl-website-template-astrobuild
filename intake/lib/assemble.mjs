@@ -92,6 +92,7 @@ function assembleFinancing(fin) {
     blurb: fin.blurb,
     bullets,
     lenderName: orNull(fin.lenderName),
+    showMonthly: !!fin.showMonthly,
     applyUrl: orNull(fin.applyUrl),
     disclaimer: fin.disclaimer,
   };
