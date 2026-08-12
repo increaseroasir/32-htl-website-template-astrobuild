@@ -70,11 +70,11 @@
     }
   ],
   "counts": {
-    "total": 79,
-    "ask": 46,
-    "default": 22,
-    "fixed": 3,
-    "composed": 8
+    "total": 68,
+    "ask": 43,
+    "default": 17,
+    "fixed": 1,
+    "composed": 7
   },
   "neverAsk": [
     {
@@ -83,7 +83,7 @@
     },
     {
       "key": "phoneDisplay",
-      "from": "contact.phone (+ optional phoneDisplayOverride)"
+      "from": "contact.phone"
     },
     {
       "key": "telHref",
@@ -184,21 +184,6 @@
       "example": "Sun Pool & Spa Supply"
     },
     {
-      "path": "identity.shortName",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "ask",
-      "group": "business",
-      "label": "Short name",
-      "help": "For tight spaces — mobile nav, footer bottom bar.",
-      "control": "text",
-      "example": "Sun Pool"
-    },
-    {
       "path": "identity.foundedYear",
       "type": "number",
       "required": true,
@@ -276,21 +261,6 @@
       "help": "E.164 format, e.g. +16195618587. The display string and the tap-to-call link are both derived from this — there is no second place to type a number.",
       "control": "tel",
       "example": "+16195618587"
-    },
-    {
-      "path": "contact.phoneDisplayOverride",
-      "type": "string",
-      "required": true,
-      "nullable": true,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "ask",
-      "group": "contact",
-      "label": "Phone display override",
-      "help": "Leave blank for US numbers. Only needed if the automatic formatter cannot render the number correctly.",
-      "control": "text",
-      "example": null
     },
     {
       "path": "contact.smsPhone",
@@ -391,21 +361,6 @@
       "label": "ZIP / postal code",
       "control": "text",
       "example": "92040"
-    },
-    {
-      "path": "address.country",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "length": 2
-      },
-      "source": "default",
-      "group": "location",
-      "label": "Country code",
-      "help": "Two letters, ISO-3166.",
-      "control": "text",
-      "example": "US"
     },
     {
       "path": "address.latitude",
@@ -819,24 +774,6 @@
       "example": "https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-footer.png"
     },
     {
-      "path": "brand.logos.inventory",
-      "type": "string",
-      "required": true,
-      "nullable": true,
-      "constraints": {
-        "minLength": 1,
-        "rules": [
-          "Asset paths must be absolute: start with \"/\" or \"https://\". Relative paths 404 on nested routes."
-        ]
-      },
-      "source": "ask",
-      "group": "brand",
-      "label": "Inventory card logo URL",
-      "help": "Optional. Leave blank to reuse the header logo.",
-      "control": "url",
-      "example": null
-    },
-    {
       "path": "brand.logos.favicon",
       "type": "string",
       "required": true,
@@ -966,45 +903,6 @@
       "help": "One canonical destination. The old site had this pointing two different places.",
       "control": "text",
       "example": "/inventory"
-    },
-    {
-      "path": "nav.legalItems",
-      "type": "array<object>",
-      "required": false,
-      "nullable": false,
-      "default": [],
-      "source": "composed",
-      "group": "nav",
-      "label": "Legal strip links",
-      "help": "Bottom bar. Defaults to Privacy Policy."
-    },
-    {
-      "path": "nav.legalItems[].label",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "nav",
-      "label": "Legal link text",
-      "control": "text",
-      "example": "Privacy Policy"
-    },
-    {
-      "path": "nav.legalItems[].href",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "nav",
-      "label": "Legal link destination",
-      "control": "text",
-      "example": "/privacy-policy"
     },
     {
       "path": "categories",
@@ -1248,38 +1146,6 @@
       "example": false
     },
     {
-      "path": "homepage.title",
-      "type": "string",
-      "required": false,
-      "nullable": true,
-      "default": null,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "homepage",
-      "label": "Homepage title override",
-      "help": "Leave blank. Null falls back to the one-line description, so there is no second copy of it.",
-      "control": "text",
-      "example": null
-    },
-    {
-      "path": "homepage.description",
-      "type": "string",
-      "required": false,
-      "nullable": true,
-      "default": null,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "default",
-      "group": "homepage",
-      "label": "Homepage meta description override",
-      "help": "Leave blank — falls back to the one-line description.",
-      "control": "textarea",
-      "example": null
-    },
-    {
       "path": "homepage.sections",
       "type": "array<union>",
       "required": false,
@@ -1327,34 +1193,6 @@
       "group": "homepage",
       "label": "Homepage small print",
       "help": "Required only if a homepage section makes a superlative claim. The build fails without it in that case."
-    },
-    {
-      "path": "integrations.d1BindingName",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "fixed",
-      "group": "integrations",
-      "label": "D1 binding name",
-      "help": "Always DB. Set in wrangler.toml at deploy time.",
-      "example": "DB"
-    },
-    {
-      "path": "integrations.r2BindingName",
-      "type": "string",
-      "required": true,
-      "nullable": false,
-      "constraints": {
-        "minLength": 1
-      },
-      "source": "fixed",
-      "group": "integrations",
-      "label": "R2 binding name",
-      "help": "Always PRODUCT_IMAGES.",
-      "example": "PRODUCT_IMAGES"
     },
     {
       "path": "integrations.ghl.enabled",

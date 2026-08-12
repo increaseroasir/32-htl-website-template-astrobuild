@@ -47,7 +47,9 @@ export function buildLocalBusiness(): Record<string, unknown> {
       addressLocality: site.address.city,
       addressRegion: site.address.region,
       postalCode: site.address.postalCode,
-      addressCountry: site.address.country,
+      // US-only template: phone format, postal validation and CRM all assume
+      // it, so the country is a constant here, not a config field.
+      addressCountry: 'US',
     },
 
     // Required in the config schema precisely so it cannot be omitted here.

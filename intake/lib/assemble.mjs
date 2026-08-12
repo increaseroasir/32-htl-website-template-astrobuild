@@ -160,7 +160,6 @@ export function assembleConfig(intake) {
 
     identity: {
       name: b.name,
-      shortName: b.shortName,
       foundedYear: b.foundedYear,
       tagline: b.tagline,
       siteUrl: b.siteUrl,
@@ -169,7 +168,6 @@ export function assembleConfig(intake) {
 
     contact: {
       phone: c.phone,
-      phoneDisplayOverride: orNull(c.phoneDisplayOverride),
       smsPhone: orNull(c.smsPhone),
       email: orNull(c.email),
     },
@@ -180,7 +178,6 @@ export function assembleConfig(intake) {
       city: l.city,
       region: l.region,
       postalCode: l.postalCode,
-      country: l.country ?? defaultFor('address.country'),
       latitude: l.latitude,
       longitude: l.longitude,
       googlePlaceId: orNull(l.googlePlaceId),
@@ -204,7 +201,6 @@ export function assembleConfig(intake) {
       logos: {
         nav: brand.logos?.nav,
         footer: brand.logos?.footer,
-        inventory: orNull(brand.logos?.inventory),
         favicon: blank(brand.logos?.favicon) ? defaultFor('brand.logos.favicon') : brand.logos.favicon,
         ogImage: blank(brand.logos?.ogImage) ? defaultFor('brand.logos.ogImage') : brand.logos.ogImage,
       },
@@ -217,9 +213,6 @@ export function assembleConfig(intake) {
         label: nav.primaryCta?.label ?? defaultFor('nav.primaryCta.label'),
         href: nav.primaryCta?.href ?? defaultFor('nav.primaryCta.href'),
       },
-      legalItems: nav.legalItems ?? [
-        { label: defaultFor('nav.legalItems[].label'), href: defaultFor('nav.legalItems[].href') },
-      ],
     },
 
     categories,
@@ -240,8 +233,6 @@ export function assembleConfig(intake) {
      * — they are the sections that cannot be invented.
      */
     homepage: {
-      title: null,
-      description: null,
       sections: [
         { type: 'hero', headline: null, actions: [{ label: 'Shop Inventory', href: '/inventory' }] },
         { type: 'categories', heading: 'What we sell' },
@@ -262,8 +253,6 @@ export function assembleConfig(intake) {
     },
 
     integrations: {
-      d1BindingName: defaultFor('integrations.d1BindingName'),
-      r2BindingName: defaultFor('integrations.r2BindingName'),
       ghl: { enabled: !!integrations.ghl },
       meta: { enabled: !!integrations.meta },
       zaraz: { enabled: !!integrations.zaraz },

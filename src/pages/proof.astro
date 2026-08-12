@@ -39,7 +39,6 @@ const counts = db ? await countProductsByCategory(db) : {};
       <h2 class="text-2xl">Identity</h2>
       <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
         <dt class="font-semibold">Name</dt><dd>{site.identity.name}</dd>
-        <dt class="font-semibold">Short name</dt><dd>{site.identity.shortName}</dd>
         <dt class="font-semibold">Founded</dt><dd>{site.identity.foundedYear}</dd>
         <dt class="font-semibold text-brand-accent-dark">Years in business</dt>
         <dd>{derived.yearsInBusiness} <span class="text-brand-ink-muted">(derived — never typed)</span></dd>

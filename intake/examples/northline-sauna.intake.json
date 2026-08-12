@@ -5,7 +5,6 @@
 
   "business": {
     "name": "Northline Sauna & Cold Co.",
-    "shortName": "Northline",
     "foundedYear": 2016,
     "tagline": "Finnish saunas and cold plunge tubs, built for Idaho winters.",
     "siteUrl": "https://example-northline.com"
@@ -13,7 +12,6 @@
 
   "contact": {
     "phone": "+12085550147",
-    "phoneDisplayOverride": null,
     "smsPhone": "+12085550148",
     "email": "hello@example-northline.com"
   },
@@ -24,7 +22,6 @@
     "city": "Boise",
     "region": "ID",
     "postalCode": "83713",
-    "country": "US",
     "latitude": 43.646099,
     "longitude": -116.353241,
     "googlePlaceId": null
@@ -67,7 +64,6 @@
     "logos": {
       "nav": "https://example.com/brand/northline-nav.svg",
       "footer": "https://example.com/brand/northline-knockout.svg",
-      "inventory": null,
       "favicon": "https://example.com/brand/northline-favicon.svg",
       "ogImage": "https://example.com/brand/northline-og.png"
     },

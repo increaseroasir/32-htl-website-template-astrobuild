@@ -65,7 +65,6 @@ export function cleanManifest(overrides = {}) {
       ],
       footer: [{ label: 'Inventory', href: '/inventory' }],
       primaryCta: { label: 'Shop Inventory', href: '/inventory' },
-      legalItems: [{ label: 'Privacy Policy', href: '/privacy-policy' }],
     },
     integrations: {},
     financingEnabled: false,
@@ -73,7 +72,6 @@ export function cleanManifest(overrides = {}) {
     logos: {
       nav: '/brand/logo-nav.svg',
       footer: '/brand/logo-footer.svg',
-      inventory: null,
       favicon: '/brand/favicon.svg',
       ogImage: '/brand/og-default.png',
     },
@@ -480,7 +478,6 @@ test('template mode fails on exactly the three locks — set equality', async ()
         ],
         footer: [{ label: 'Inventory', href: '/inventory' }],
         primaryCta: { label: 'Shop Inventory', href: '/inventory' },
-        legalItems: [{ label: 'Privacy Policy', href: '/privacy-policy' }],
       },
     }),
   );

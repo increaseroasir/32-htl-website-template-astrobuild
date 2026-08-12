@@ -48,8 +48,8 @@ const jsonLd: Record<string, unknown> = {
 ---
 
 <BaseLayout
-  title={homepage.title ?? site.identity.tagline}
-  description={homepage.description ?? site.identity.tagline}
+  title={site.identity.tagline}
+  description={site.identity.tagline}
   path="/"
   jsonLd={jsonLd}
 >

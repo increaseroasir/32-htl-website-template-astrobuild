@@ -95,8 +95,7 @@ export function isCategoryEnabled(slug: string): boolean {
 /* Phone — one canonical number, two derived forms                     */
 /* ------------------------------------------------------------------ */
 
-function formatPhone(e164: string, override: string | null): string {
-  if (override) return override;
+function formatPhone(e164: string): string {
   // North American +1XXXXXXXXXX → (XXX) XXX-XXXX
   const na = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(e164);
   if (na) return `(${na[1]}) ${na[2]}-${na[3]}`;
@@ -223,7 +222,7 @@ export const derived = {
   isTemplate: site.deployMode === 'template',
 
   // Phone
-  phoneDisplay: formatPhone(site.contact.phone, site.contact.phoneDisplayOverride),
+  phoneDisplay: formatPhone(site.contact.phone),
   telHref: `tel:${site.contact.phone}`,
   smsHref: `sms:${site.contact.smsPhone ?? site.contact.phone}`,
   emailHref: site.contact.email ? `mailto:${site.contact.email}` : null,

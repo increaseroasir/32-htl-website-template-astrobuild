@@ -62,7 +62,6 @@ function gateManifest() {
             header: derived.headerNav.map((n) => ({ label: n.label, href: n.href })),
             footer: derived.footerNav.map((n) => ({ label: n.label, href: n.href })),
             primaryCta: site.nav.primaryCta,
-            legalItems: site.nav.legalItems,
           },
           integrations: site.integrations,
           /**
@@ -92,7 +91,7 @@ function gateManifest() {
               ...derived.headerNav.map((n) => n.href),
               ...derived.footerNav.map((n) => n.href),
               site.nav.primaryCta.href,
-              ...site.nav.legalItems.map((l) => l.href),
+              '/privacy-policy', // the footer's hardcoded legal link
             ]),
           ].filter((href) => href.startsWith('/')),
 

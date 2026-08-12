@@ -25,7 +25,6 @@ export const rawClientConfig: ClientConfigInput = {
 
   identity: {
     name: 'Sun Pool & Spa Supply',
-    shortName: 'Sun Pool',
     // The logo says EST. 1978. On the old site, "1979" was typed into 17
     // files and one of them was wrong. Here it is one number.
     foundedYear: 1978,
@@ -35,7 +34,6 @@ export const rawClientConfig: ClientConfigInput = {
 
   contact: {
     phone: '+16195618587',
-    phoneDisplayOverride: null,
     smsPhone: null,
     email: null, // CONFIRM — not published on the current site.
   },
@@ -46,7 +44,6 @@ export const rawClientConfig: ClientConfigInput = {
     city: 'Lakeside',
     region: 'CA',
     postalCode: '92040',
-    country: 'US',
     // From TEMPLATE_DEFECTS "still open" list — the geo the old schema lacked.
     latitude: 32.857086,
     longitude: -116.924479,
@@ -92,7 +89,6 @@ export const rawClientConfig: ClientConfigInput = {
     logos: {
       nav: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-nav.png',
       footer: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-footer.png',
-      inventory: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-inventory.png',
       favicon: '/brand/favicon.svg', // CONFIRM — no R2 favicon recorded.
       ogImage: '/brand/og-default.png', // CONFIRM — no R2 OG image recorded.
     },
@@ -116,9 +112,6 @@ export const rawClientConfig: ClientConfigInput = {
       { type: 'link', label: 'Visit Us', href: '/visit-us', inHeader: true, inFooter: true },
     ],
     primaryCta: { label: 'Shop Inventory', href: '/inventory' },
-    // Bottom-bar legal strip. In config, so the Footer component
-    // contains no hard-coded hrefs of its own.
-    legalItems: [{ label: 'Privacy Policy', href: '/privacy-policy' }],
   },
 
   // Sun Pool sells hot tubs and swim spas. Nothing else is enabled, so
@@ -144,9 +137,6 @@ export const rawClientConfig: ClientConfigInput = {
   // render time, and no section states a years-in-business number because
   // that is derived from foundedYear.
   homepage: {
-    title: null,
-    description: null,
-
     sections: [
       /* ---------------- announcement bar ---------------- */
       {
@@ -447,8 +437,6 @@ export const rawClientConfig: ClientConfigInput = {
   },
 
   integrations: {
-    d1BindingName: 'DB',
-    r2BindingName: 'PRODUCT_IMAGES',
     ghl: { enabled: true },
     meta: { enabled: true },
     zaraz: { enabled: true },

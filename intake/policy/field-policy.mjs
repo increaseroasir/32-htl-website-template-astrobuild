@@ -43,7 +43,7 @@ export const GROUPS = [
  */
 export const DERIVED_NEVER_ASK = [
   { key: 'isTemplate', from: 'deployMode' },
-  { key: 'phoneDisplay', from: 'contact.phone (+ optional phoneDisplayOverride)' },
+  { key: 'phoneDisplay', from: 'contact.phone' },
   { key: 'telHref', from: 'contact.phone' },
   { key: 'smsHref', from: 'contact.smsPhone ?? contact.phone' },
   { key: 'emailHref', from: 'contact.email' },
@@ -98,14 +98,6 @@ export const FIELD_POLICY = {
     help: 'Exactly as it should appear in the header, footer, page titles and Google results.',
     example: 'Sun Pool & Spa Supply',
   },
-  'identity.shortName': {
-    source: 'ask',
-    group: 'business',
-    control: 'text',
-    label: 'Short name',
-    help: 'For tight spaces — mobile nav, footer bottom bar.',
-    example: 'Sun Pool',
-  },
   'identity.foundedYear': {
     source: 'ask',
     group: 'business',
@@ -148,14 +140,6 @@ export const FIELD_POLICY = {
     help: 'E.164 format, e.g. +16195618587. The display string and the tap-to-call link are both derived from this — there is no second place to type a number.',
     example: '+16195618587',
   },
-  'contact.phoneDisplayOverride': {
-    source: 'ask',
-    group: 'contact',
-    control: 'text',
-    label: 'Phone display override',
-    help: 'Leave blank for US numbers. Only needed if the automatic formatter cannot render the number correctly.',
-    example: null,
-  },
   'contact.smsPhone': {
     source: 'ask',
     group: 'contact',
@@ -179,14 +163,6 @@ export const FIELD_POLICY = {
   'address.city': { source: 'ask', group: 'location', control: 'text', label: 'City', example: 'Lakeside' },
   'address.region': { source: 'ask', group: 'location', control: 'text', label: 'State / province', example: 'CA' },
   'address.postalCode': { source: 'ask', group: 'location', control: 'text', label: 'ZIP / postal code', example: '92040' },
-  'address.country': {
-    source: 'default',
-    group: 'location',
-    control: 'text',
-    label: 'Country code',
-    help: 'Two letters, ISO-3166.',
-    example: 'US',
-  },
   'address.latitude': {
     source: 'ask',
     group: 'location',
@@ -293,14 +269,6 @@ export const FIELD_POLICY = {
     help: 'The knockout (light-on-dark) version. This is also what the mobile menu uses — a missing one is why the old drawer showed bare text.',
     example: 'https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-footer.png',
   },
-  'brand.logos.inventory': {
-    source: 'ask',
-    group: 'brand',
-    control: 'url',
-    label: 'Inventory card logo URL',
-    help: 'Optional. Leave blank to reuse the header logo.',
-    example: null,
-  },
   'brand.logos.favicon': {
     source: 'default',
     group: 'brand',
@@ -332,9 +300,6 @@ export const FIELD_POLICY = {
   },
   'nav.primaryCta.label': { source: 'default', group: 'nav', control: 'text', label: 'Main button text', example: 'Shop Inventory' },
   'nav.primaryCta.href': { source: 'default', group: 'nav', control: 'text', label: 'Main button destination', help: 'One canonical destination. The old site had this pointing two different places.', example: '/inventory' },
-  'nav.legalItems': { source: 'composed', group: 'nav', label: 'Legal strip links', help: 'Bottom bar. Defaults to Privacy Policy.' },
-  'nav.legalItems[].label': { source: 'default', group: 'nav', control: 'text', label: 'Legal link text', example: 'Privacy Policy' },
-  'nav.legalItems[].href': { source: 'default', group: 'nav', control: 'text', label: 'Legal link destination', example: '/privacy-policy' },
 
   /* ---------------- categories ---------------- */
   categories: {
@@ -361,22 +326,6 @@ export const FIELD_POLICY = {
   },
 
   /* ---------------- homepage ---------------- */
-  'homepage.title': {
-    source: 'default',
-    group: 'homepage',
-    control: 'text',
-    label: 'Homepage title override',
-    help: 'Leave blank. Null falls back to the one-line description, so there is no second copy of it.',
-    example: null,
-  },
-  'homepage.description': {
-    source: 'default',
-    group: 'homepage',
-    control: 'textarea',
-    label: 'Homepage meta description override',
-    help: 'Leave blank — falls back to the one-line description.',
-    example: null,
-  },
   'homepage.sections': {
     source: 'composed',
     group: 'homepage',
@@ -462,8 +411,6 @@ export const FIELD_POLICY = {
   },
 
   /* ---------------- integrations ---------------- */
-  'integrations.d1BindingName': { source: 'fixed', group: 'integrations', label: 'D1 binding name', help: 'Always DB. Set in wrangler.toml at deploy time.', example: 'DB' },
-  'integrations.r2BindingName': { source: 'fixed', group: 'integrations', label: 'R2 binding name', help: 'Always PRODUCT_IMAGES.', example: 'PRODUCT_IMAGES' },
   'integrations.ghl.enabled': {
     source: 'ask',
     group: 'integrations',

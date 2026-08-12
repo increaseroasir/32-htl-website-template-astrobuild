@@ -5,7 +5,6 @@
 
   "business": {
     "name": "Sun Pool & Spa Supply",
-    "shortName": "Sun Pool",
     "foundedYear": 1978,
     "tagline": "The best hot tub and swim spa store in San Diego County. Real units on the floor.",
     "siteUrl": "https://sunpoolandspasupply.com"
@@ -13,7 +12,6 @@
 
   "contact": {
     "phone": "+16195618587",
-    "phoneDisplayOverride": null,
     "smsPhone": null,
     "email": null
   },
@@ -24,7 +22,6 @@
     "city": "Lakeside",
     "region": "CA",
     "postalCode": "92040",
-    "country": "US",
     "latitude": 32.857086,
     "longitude": -116.924479,
     "googlePlaceId": null
@@ -54,7 +51,6 @@
     "logos": {
       "nav": "https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-nav.png",
       "footer": "https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-footer.png",
-      "inventory": "https://pub-24055549503540b0b5ff19237b87d146.r2.dev/logos/logo-inventory.png",
       "favicon": null,
       "ogImage": null
     }

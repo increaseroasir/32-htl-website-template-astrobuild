@@ -122,18 +122,8 @@ const { footerNav, socialLinks, mapEmbedUrl, directionsUrl, telHref, phoneDispla
 
   <div class="footer-bottom">
     <span>{copyrightLine}</span>
-    {
-      site.nav.legalItems.length > 0 && (
-        <span class="footer-legal">
-          {site.nav.legalItems.map((item, i) => (
-            <>
-              {i > 0 && <span aria-hidden="true"> · </span>}
-              <a href={item.href}>{item.label}</a>
-            </>
-          ))}
-        </span>
-      )
-    }
+    {/* The privacy route always exists — a template page, not a client fact. */}
+    <span class="footer-legal"><a href="/privacy-policy">Privacy Policy</a></span>
   </div>
 </footer>
 

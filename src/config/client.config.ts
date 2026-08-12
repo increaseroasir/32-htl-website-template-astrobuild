@@ -26,7 +26,6 @@ export const rawClientConfig: ClientConfigInput = {
 
   identity: {
     name: 'CLIENT NAME HERE',
-    shortName: 'CLIENT',
     foundedYear: 2000,
     tagline: 'Replace this tagline with what this client actually does.',
     siteUrl: 'https://example.com',
@@ -37,7 +36,6 @@ export const rawClientConfig: ClientConfigInput = {
     // from this one value — there is no second place to type a number.
     // 555-01xx is the reserved fictional range, so it is obviously fake.
     phone: '+15555550100',
-    phoneDisplayOverride: null,
     smsPhone: null,
     email: 'hello@example.com',
   },
@@ -48,7 +46,6 @@ export const rawClientConfig: ClientConfigInput = {
     city: 'City',
     region: 'ST',
     postalCode: '00000',
-    country: 'US',
     // 0,0 is Null Island — valid, and unmistakably a placeholder.
     latitude: 0,
     longitude: 0,
@@ -104,7 +101,6 @@ export const rawClientConfig: ClientConfigInput = {
     logos: {
       nav: '/brand/logo-nav.svg',
       footer: '/brand/logo-footer.svg', // knockout, for dark backgrounds + mobile drawer
-      inventory: null,
       favicon: '/brand/favicon.svg',
       ogImage: '/brand/og-default.png',
     },
@@ -139,9 +135,6 @@ export const rawClientConfig: ClientConfigInput = {
     // pointed at /book/ on the homepage and /inventory.html everywhere
     // else. Here there is one value, so it cannot disagree with itself.
     primaryCta: { label: 'Shop Inventory', href: '/inventory' },
-    // Bottom-bar legal strip. In config, so the Footer component
-    // contains no hard-coded hrefs of its own.
-    legalItems: [{ label: 'Privacy Policy', href: '/privacy-policy' }],
   },
 
   /**
@@ -198,8 +191,6 @@ export const rawClientConfig: ClientConfigInput = {
    * the schema.
    */
   homepage: {
-    title: null, // falls back to identity.tagline
-    description: null, // falls back to identity.tagline
     sections: [
       {
         type: 'hero',
@@ -246,8 +237,6 @@ export const rawClientConfig: ClientConfigInput = {
    * `wrangler secret put` and read from the Worker env at runtime.
    */
   integrations: {
-    d1BindingName: 'DB',
-    r2BindingName: 'PRODUCT_IMAGES',
     ghl: { enabled: false },
     meta: { enabled: false },
     zaraz: { enabled: false },

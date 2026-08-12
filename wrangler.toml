@@ -11,7 +11,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # --- D1: inventory / products / leads (Phase 3) ---
 # [[d1_databases]]
-# binding = "DB"                  # must match integrations.d1BindingName in config
+# binding = "DB"                  # the name src/lib/db.ts expects — do not rename
 # database_name = "TODO-client-inventory"
 # database_id = "TODO-run: wrangler d1 create <name>"
 # migrations_dir = "db/migrations"  # REQUIRED — uncomment with the block above.
@@ -21,7 +21,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # --- R2: product images (Phase 6) ---
 # [[r2_buckets]]
-# binding = "PRODUCT_IMAGES"      # must match integrations.r2BindingName in config
+# binding = "PRODUCT_IMAGES"      # the name the code expects — do not rename
 # bucket_name = "TODO-client-product-images"
 
 [vars]

@@ -17,7 +17,7 @@
  */
 
 import { env } from 'cloudflare:workers';
-import { enabledCategorySlugs, enabledCategories, site } from '../config';
+import { enabledCategorySlugs, enabledCategories } from '../config';
 import type { CategorySlug } from '../config/categories';
 
 /* ------------------------------------------------------------------ */
@@ -336,7 +336,9 @@ export interface InventoryStatus {
 
 /** Used by pages and API routes to explain themselves when D1 is absent. */
 export function inventoryStatus(db: D1Database | null): InventoryStatus {
-  const bindingName = site.integrations.d1BindingName;
+  // The one D1 binding. Declared in wrangler.toml; the name is a deploy-time
+  // fact, not a per-client decision, so it is a constant rather than config.
+  const bindingName = 'DB';
   // No phone DIGITS in the string: every rendered phone must be a tel: link
   // (the gate enforces it), so pages pair this message with their own
   // tel-href action and the quiz appends its own Call link to API errors.

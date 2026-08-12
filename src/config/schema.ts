@@ -107,7 +107,6 @@ const brandSchema = z.object({
   logos: z.object({
     nav: absoluteAsset, // header, light background
     footer: absoluteAsset, // knockout, dark background — also used by mobile drawer
-    inventory: absoluteAsset.nullable(), // inventory gate / lead card
     favicon: absoluteAsset,
     ogImage: absoluteAsset,
   }),
@@ -127,8 +126,6 @@ const brandSchema = z.object({
 const identitySchema = z.object({
   /** Legal / display business name. Appears in nav, footer, schema, titles. */
   name: z.string().min(1),
-  /** Short name for tight spaces (mobile nav, footer bottom). */
-  shortName: z.string().min(1),
   /**
    * Founding year. TEMPLATE_DEFECTS: "1979" appeared in 17 files while the
    * logo said 1978. Here it exists once; `yearsInBusiness` is derived.
@@ -155,11 +152,6 @@ const identitySchema = z.object({
 const contactSchema = z.object({
   /** Canonical phone. tel: href and the display string are both derived. */
   phone: e164Phone,
-  /**
-   * Only set this for non-US numbers the default formatter cannot render.
-   * Leave null and the display string is derived from `phone`.
-   */
-  phoneDisplayOverride: z.string().min(1).nullable(),
   /** Optional separate SMS number. Falls back to `phone` when null. */
   smsPhone: e164Phone.nullable(),
   /** Null when the client does not publish an email address. */
@@ -172,7 +164,6 @@ const addressSchema = z.object({
   city: z.string().min(1),
   region: z.string().min(1), // state / province
   postalCode: z.string().min(1),
-  country: z.string().length(2), // ISO-3166 alpha-2
   /**
    * Geo is REQUIRED, not optional. TEMPLATE_DEFECTS: LocalBusiness schema
    * shipped with no geo. Making it required means the schema cannot be
@@ -343,10 +334,6 @@ const displaySchema = z.object({
  * steps, faq, ctaband, cta, trust, bignumber.
  */
 const homepageSchema = z.object({
-  /** Overrides <title>. Null falls back to identity.tagline. */
-  title: z.string().min(1).nullable().default(null),
-  /** Overrides the meta description. Null falls back to identity.tagline. */
-  description: z.string().min(1).nullable().default(null),
   sections: z.array(sectionSchema).default([]),
   /** Footnotes and small print printed at the bottom of the page. */
   disclosures: z.array(z.string().min(1)).default([]),
@@ -361,8 +348,6 @@ const homepageSchema = z.object({
  * This block only records which bindings exist and which integrations are on.
  */
 const integrationsSchema = z.object({
-  d1BindingName: z.string().min(1),
-  r2BindingName: z.string().min(1),
   ghl: z.object({ enabled: z.boolean() }),
   meta: z.object({ enabled: z.boolean() }),
   zaraz: z.object({ enabled: z.boolean() }),
@@ -394,12 +379,6 @@ export const clientConfigSchema = z
       items: z.array(navItemSchema).min(1),
       /** The one canonical "Shop Inventory" destination. */
       primaryCta: ctaSchema,
-      /**
-       * Bottom-bar links (privacy, terms, accessibility). Separate from
-       * `items` because they belong in the legal strip, not the menu — but
-       * still config, so the footer component hard-codes no hrefs.
-       */
-      legalItems: z.array(ctaSchema).default([]),
     }),
     // partialRecord, not record: an ABSENT key is the normal case and means
     // OFF. A plain z.record would demand every category be listed, which is
@@ -417,8 +396,6 @@ export const clientConfigSchema = z
      * sections until someone adds them.
      */
     homepage: homepageSchema.default({
-      title: null,
-      description: null,
       sections: [],
       disclosures: [],
     }),
