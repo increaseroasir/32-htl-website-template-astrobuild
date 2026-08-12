@@ -395,7 +395,30 @@ async function sourceChecks() {
   if (headerProblems.length) fail('Headers file is intact', headerProblems.join('; '));
   else pass('Headers file is intact');
 
-  // --- 8. D1 migrations configured ---------------------------------
+  // --- 8. No viewport lock in src -----------------------------------
+  // The source half of the C12 inversion: a locked viewport is a WCAG
+  // 1.4.4 failure that never comes back, and this catches it without a
+  // dev server (the rendered half is 'Landing viewport allows zoom').
+  const viewportOffenders = [];
+  for (const file of files) {
+    const rel = relative(ROOT, file);
+    const body = stripComments(await readFile(file, 'utf8'));
+    for (const [i, line] of body.split('\n').entries()) {
+      if (/user-scalable\s*=\s*no|maximum-scale\s*=\s*1\b/.test(line)) {
+        viewportOffenders.push(`${rel}:${i + 1}`);
+      }
+    }
+  }
+  if (viewportOffenders.length) {
+    fail(
+      'No viewport lock in src',
+      `${viewportOffenders.join(', ')} — pinch-zoom must work (WCAG 1.4.4). iOS input zoom is solved by the 16px rule in theme.css.`,
+    );
+  } else {
+    pass('No viewport lock in src');
+  }
+
+  // --- 9. D1 migrations configured ---------------------------------
   // A schema change on a live client database is impossible without a
   // migrations path (J-08): `CREATE TABLE IF NOT EXISTS` skips existing
   // tables entirely, so an edit to schema.sql never reaches a client.
@@ -769,7 +792,7 @@ async function checkLandingPages(m, robots) {
   const noLabel = [];
   const noForm = [];
   const placeholder = [];
-  const unlocked = [];
+  const locked = [];
 
   for (const [i, route] of routes.entries()) {
     let page;
@@ -817,9 +840,11 @@ async function checkLandingPages(m, robots) {
     // 5. Placeholder copy that reached a paid page.
     if (/\bEXAMPLE\b|\bLorem ipsum\b|\bTODO\b|\[service area\]/i.test(html)) placeholder.push(route);
 
-    // 6. Locked viewport — a pinch-zoom on mobile paid traffic is a misfired
-    //    tap on a form field.
-    if (!/user-scalable=no/.test(html)) unlocked.push(route);
+    // 6. INVERTED at C12 (decision A.4, spec §4.3): the gate used to
+    //    REQUIRE user-scalable=no here — a WCAG 1.4.4 failure iOS ignores
+    //    anyway. Now a locked viewport is the defect. iOS auto-zoom is
+    //    solved by the ≥16px input rule in theme.css.
+    if (/user-scalable=no|maximum-scale=1\b/.test(html)) locked.push(route);
   }
 
   report('Landing pages are noindex', indexable);
@@ -827,7 +852,7 @@ async function checkLandingPages(m, robots) {
   report('Advertorial label rendered', noLabel);
   report('Landing page has a lead form', noForm);
   report('No placeholder copy on a landing page', placeholder);
-  report('Landing page viewport is locked', unlocked);
+  report('Landing viewport allows zoom', locked);
 
   try {
     const sitemapPath = join(ROOT, 'dist', 'client', 'sitemap-0.xml');

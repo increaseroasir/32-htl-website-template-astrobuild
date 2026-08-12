@@ -36,11 +36,13 @@ const { title, advertorialLabel } = Astro.props;
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- Locked: no pinch-zoom, no accidental scale on tap. -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-    />
+    <!-- Zoom stays ENABLED (WCAG 1.4.4; spec §4.3). The old scale lock was
+         direct-response cargo lore: iOS has ignored it since 2016, so it
+         never stopped the form-tap zoom it was meant to stop — it only
+         removed zoom from Android users. iOS auto-zoom-on-focus is solved
+         the correct way: every input renders at ≥16px (theme.css). The
+         gate now FORBIDS the lock anywhere in src. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- Paid-only. Never indexed, never followed. -->
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
@@ -59,6 +61,10 @@ const { title, advertorialLabel } = Astro.props;
   </head>
 
   <body class="lp-body">
+    <!-- Same pattern as BaseLayout (N-06): keyboard users get a way past
+         the disclosure/header straight to the form. -->
+    <a class="skip-link" href="#main">Skip to content</a>
+
     <!--
       The disclosure. First thing in the document, visible before any claim.
       It is not styled to hide.
@@ -73,7 +79,7 @@ const { title, advertorialLabel } = Astro.props;
       <img src={site.brand.logos.footer} alt={site.identity.name} height="40" width="150" />
     </header>
 
-    <main class="lp-main">
+    <main id="main" class="lp-main">
       <slot />
     </main>
 
@@ -94,6 +100,21 @@ const { title, advertorialLabel } = Astro.props;
         color: var(--brand-ink);
         font-family: var(--brand-font-body);
         margin: 0;
+      }
+      /* Same pattern as BaseLayout's skip link. */
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        z-index: 200;
+        background: var(--brand-accent);
+        color: var(--brand-night);
+        padding: 12px 18px;
+        font-weight: 700;
+        border-radius: 0 0 12px 0;
+      }
+      .skip-link:focus {
+        left: 0;
       }
       .lp-advertorial {
         background: var(--brand-surface-alt);

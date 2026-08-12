@@ -306,6 +306,30 @@ test('PASSES on the two whitelisted material neutrals', async () => {
 });
 
 /**
+ * The viewport lock coming back (C12 / G-10, N-05). The gate used to
+ * REQUIRE user-scalable=no on landing pages; now any reappearance in src
+ * is a failure the source check catches without a dev server.
+ */
+test('FAILS when a viewport lock reappears in src', async () => {
+  const run = await withFixture(async ({ dir }) => {
+    const file = join(dir, 'src', 'layouts', 'PaidLayout.astro');
+    const body = await readFile(file, 'utf8');
+    await writeFile(
+      file,
+      body.replace(
+        'content="width=device-width, initial-scale=1, viewport-fit=cover"',
+        'content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"',
+      ),
+    );
+  });
+  assertFails(run, 'No viewport lock in src');
+});
+
+test('PASSES with zoom allowed everywhere', async () => {
+  assertPasses(await withFixture(null), 'No viewport lock in src');
+});
+
+/**
  * The wildcard client-hint delegation coming back (C11 / verification
  * defect #2). The fixture restores the shipped-wrong line; the check must
  * refuse all three regressions it guards.

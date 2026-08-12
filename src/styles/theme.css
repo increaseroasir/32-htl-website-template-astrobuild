@@ -129,3 +129,13 @@ html.js .reveal.in{opacity:1;transform:none}
    caught unhydrated {{tokens}}; here the config schema makes those
    impossible, but a null optional logo still resolves to no element. */
 img[src=""],iframe[src=""]{display:none}
+
+/* C12 — iOS zooms the whole page when a focused input renders below 16px.
+   The viewport lock that used to "solve" this was a WCAG 1.4.4 failure iOS
+   ignored anyway; THIS is the real fix, and it covers the quiz island,
+   LeadQuiz and every future form in one declaration. */
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
