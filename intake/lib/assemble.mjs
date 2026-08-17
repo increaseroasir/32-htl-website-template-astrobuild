@@ -33,14 +33,21 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MANIFEST = JSON.parse(readFileSync(resolve(HERE, '../field-manifest.json'), 'utf8'));
 
-/** Category slug → URL segment, read from the template's own catalog. */
-export const CATEGORY_SEGMENTS = {
-  'hot-tub': 'hot-tubs',
-  'swim-spa': 'swim-spas',
-  sauna: 'saunas',
-  'massage-chair': 'massage-chairs',
-  'cold-plunge': 'cold-plunges',
-};
+/** Category slug → URL segment, derived from src/config/categories.ts (ONE LAW). */
+function categorySegmentsFromCatalog() {
+  const src = readFileSync(resolve(HERE, '../../src/config/categories.ts'), 'utf8');
+  /** @type {Record<string, string>} */
+  const segments = {};
+  for (const match of src.matchAll(/slug: '([^']+)',\n    segment: '([^']+)'/g)) {
+    segments[match[1]] = match[2];
+  }
+  if (Object.keys(segments).length === 0) {
+    throw new Error('Could not derive CATEGORY_SEGMENTS from src/config/categories.ts');
+  }
+  return segments;
+}
+
+export const CATEGORY_SEGMENTS = categorySegmentsFromCatalog();
 
 /** The value the form pre-fills for a `default`-source field. */
 function defaultFor(path) {

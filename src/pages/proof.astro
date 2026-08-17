@@ -20,8 +20,9 @@ const swatches = Object.entries(site.brand.colors);
 // PHASE 3 — read the real database, if one is bound.
 const db = getDb();
 const dbStatus = inventoryStatus(db);
-const products = db ? await listProducts(db) : [];
-const counts = db ? await countProductsByCategory(db) : {};
+const [products, counts] = db
+  ? await Promise.all([listProducts(db), countProductsByCategory(db)])
+  : [[], {}];
 ---
 
 <BaseLayout title="Config Proof Sheet" noindex>

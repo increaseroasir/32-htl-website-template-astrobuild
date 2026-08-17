@@ -31,26 +31,15 @@
 
 import type { APIRoute } from 'astro';
 import { getDb } from '../../lib/db';
+import { json, bearer } from '../../lib/http';
 import { getEnv } from '../../lib/admin-auth';
 import { secretsMatch } from '../../lib/secrets';
 import { clean, looksLikeEmail, digitsOnly } from '../../lib/validate-lead';
 import { findRecentDuplicate } from '../../lib/duplicates';
 import { sheetsConfigFromEnv, upsertRowByLeadUuid } from '../../lib/sheets';
-import { buildVaultRow, shouldWriteVaultRow } from '../../lib/vault-row';
+import { buildVaultRow, persistVaultWrite } from '../../lib/vault-row';
 
 export const prerender = false;
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
-}
-
-function bearer(request: Request): string {
-  const header = request.headers.get('authorization') ?? '';
-  return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-}
 
 const EMPTY_TOUCH = {
   utm_source: '',
@@ -175,11 +164,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // consent record) — the column built for exactly this lead shape.
   const vaultTask = (async () => {
     try {
-      const priorStatus = await db
-        .prepare('SELECT vault_status FROM leads WHERE uuid = ?')
-        .bind(uuid)
-        .first<{ vault_status: string }>();
-      if (!shouldWriteVaultRow(priorStatus?.vault_status ?? '')) return;
+      // New UUID: vault_status is ''. DRIFTED refuse-to-write is for
+      // /api/lead retries that re-read prior status — not this mint.
 
       const sheets = sheetsConfigFromEnv(e);
       if (!sheets) {
@@ -218,18 +204,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           product: null, // a caller names no product — snapshot empty
         }),
       );
-      const status = result.ok ? (result.drifted ? 'DRIFTED' : 'SENT') : 'FAILED';
-      const detail = result.ok
-        ? result.drifted
-          ? `landed at ${result.updatedRange ?? '?'} — NOT retryable; repair the sheet layout by hand`
-          : ''
-        : `${result.status}: ${result.error ?? 'write failed'}`.slice(0, 300);
-      await db
-        .prepare(
-          'UPDATE leads SET vault_status = ?, vault_error = ?, vault_synced_at = ?, updated_at = ? WHERE uuid = ?',
-        )
-        .bind(status, detail, status === 'SENT' ? Date.now() : null, Date.now(), uuid)
-        .run();
+      await persistVaultWrite(db, uuid, result);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       console.error('[phone-lead] vault task failed AND could not record itself in D1:', detail);

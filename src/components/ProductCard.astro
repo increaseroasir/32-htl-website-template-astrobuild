@@ -93,9 +93,7 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
         pills.length > 0 && (
           <div class="inv-card-pills">
             {pills.map((fact) => (
-              <div class="inv-pill">
-                <span>{fact}</span>
-              </div>
+              <div class="inv-pill">{fact}</div>
             ))}
           </div>
         )
@@ -243,8 +241,6 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
     justify-content: center;
     gap: 7px;
     text-align: center;
-  }
-  .inv-pill span {
     color: var(--brand-ink-muted);
     font-family: var(--brand-font-mono);
     font-size: 0.6rem;
