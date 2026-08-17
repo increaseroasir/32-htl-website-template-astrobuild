@@ -13,6 +13,7 @@
 
 import { site, derived } from '../config';
 import type { Product } from './db';
+import { pricingFor } from './format';
 
 const siteUrl = site.identity.siteUrl;
 
@@ -124,10 +125,18 @@ export function buildProduct(product: Product, pagePath: string): Record<string,
       seller: { '@id': BUSINESS_ID },
       itemCondition: 'https://schema.org/NewCondition',
     };
-    // A price of 0 means "ask" — publishing 0 would be a lie, and Google
-    // treats a zero price as an error rather than as a missing value.
-    if (product.price > 0) offer.price = product.price;
-    else offer.availability = availability;
+    // The page and the structured data have to agree.
+    //
+    // This used to publish any positive price, so a sold unit — whose page
+    // shows no price at all — still carried one in its Offer, and a client
+    // who turned cash prices off published them to Google anyway. What a
+    // customer reads and what a crawler reads were two different answers
+    // from two different rules.
+    //
+    // pricingFor() is the one rule. If it will not print a cash figure, no
+    // figure is published. A price of 0 also means "ask", and publishing 0
+    // would be a lie Google treats as an error rather than as a gap.
+    if (pricingFor(product).cash !== null) offer.price = product.price;
     schema.offers = offer;
   }
 

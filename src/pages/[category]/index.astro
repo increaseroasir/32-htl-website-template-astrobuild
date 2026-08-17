@@ -16,7 +16,7 @@ import CategoryHero from '../../components/CategoryHero.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { findCategoryBySegment } from '../../config/categories';
-import { enabledCategories, isCategoryEnabled, site } from '../../config';
+import { enabledCategories, isCategoryEnabled, site, derived } from '../../config';
 import { getDb, listProducts, inventoryStatus } from '../../lib/db';
 import { buildItemList } from '../../lib/seo';
 
@@ -36,6 +36,7 @@ if (!resolved) {
 
 const db = resolved ? getDb() : null;
 const dbStatus = inventoryStatus(db);
+if (resolved && !dbStatus.configured) console.error('[category]', dbStatus.operatorDetail);
 const products = db && resolved ? await listProducts(db, { category: resolved.slug }) : [];
 const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site.identity.name}`) : null;
 ---
@@ -89,7 +90,12 @@ const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site
         {!dbStatus.configured ? (
           <div class="empty">
             <h2>Inventory isn't connected yet</h2>
-            <p>{dbStatus.message}</p>
+            <p>{dbStatus.customerMessage}</p>
+            <p class="empty-actions">
+              <a class="btn btn-gold" href={derived.telHref}>
+                Call {derived.phoneDisplay}
+              </a>
+            </p>
           </div>
         ) : products.length === 0 ? (
           <div class="empty">
@@ -106,8 +112,8 @@ const itemList = resolved ? buildItemList(products, `${resolved.label} at ${site
           </div>
         ) : (
           <div class="inv-grid">
-            {products.map((product) => (
-              <ProductCard product={product} />
+            {products.map((product, i) => (
+              <ProductCard product={product} index={i} />
             ))}
           </div>
         )}

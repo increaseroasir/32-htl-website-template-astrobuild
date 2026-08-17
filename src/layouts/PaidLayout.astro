@@ -1,0 +1,174 @@
+---
+/**
+ * PAID LANDING PAGE LAYOUT.
+ *
+ * Deliberately NOT BaseLayout. Every difference below is a decision, not an
+ * omission:
+ *
+ *   - NO header nav. A paid click that leaves for /inventory is a paid click
+ *     that did not convert. There is exactly one way forward on this page.
+ *   - NO footer sitemap. Same reason.
+ *   - noindex. This page is paid-only. Indexed, it competes with the real
+ *     site for the same keywords and collects organic traffic the client is
+ *     already paying to reach.
+ *   - Locked viewport. A pinch-zoom on a landing page is a misfired tap on a
+ *     form field, and on mobile paid traffic that is most of the audience.
+ *   - The advertorial label ships in the markup, above everything. An ad
+ *     styled as editorial without disclosure is a deceptive format under FTC
+ *     16 CFR §255.
+ *
+ * It DOES share BrandTokens, so a landing page inherits the client's colours
+ * automatically. There is no second styling system to keep in step.
+ */
+import '../styles/global.css';
+import BrandTokens from '../components/BrandTokens.astro';
+import { site, derived } from '../config';
+
+interface Props {
+  title: string;
+  advertorialLabel: string;
+}
+
+const { title, advertorialLabel } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Zoom stays ENABLED (WCAG 1.4.4; spec §4.3). The old scale lock was
+         direct-response cargo lore: iOS has ignored it since 2016, so it
+         never stopped the form-tap zoom it was meant to stop — it only
+         removed zoom from Android users. iOS auto-zoom-on-focus is solved
+         the correct way: every input renders at ≥16px (theme.css). The
+         gate now FORBIDS the lock anywhere in src. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Paid-only. Never indexed, never followed. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <meta name="theme-color" content={site.brand.colors.night} />
+    <link rel="icon" href={site.brand.logos.favicon} />
+    {
+      site.brand.fonts.googleFontsHref && (
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+          <link rel="stylesheet" href={site.brand.fonts.googleFontsHref} />
+        </>
+      )
+    }
+    <BrandTokens />
+  </head>
+
+  <body class="lp-body">
+    <!-- Same pattern as BaseLayout (N-06): keyboard users get a way past
+         the disclosure/header straight to the form. -->
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!--
+      The disclosure. First thing in the document, visible before any claim.
+      It is not styled to hide.
+    -->
+    <div class="lp-advertorial" role="note">{advertorialLabel}</div>
+
+    <!--
+      A logo, not a nav. The visitor should know whose page this is; they
+      should not be given a menu.
+    -->
+    <header class="lp-header">
+      <img src={site.brand.logos.footer} alt={site.identity.name} height="40" width="150" />
+    </header>
+
+    <main id="main" class="lp-main">
+      <slot />
+    </main>
+
+    <footer class="lp-footer">
+      <p class="lp-footer-name">{site.identity.name}</p>
+      <p class="lp-footer-line">{derived.addressOneLine}</p>
+      <!-- The phone is the one non-form conversion path, so it stays. -->
+      <p class="lp-footer-line">
+        <a href={derived.telHref}>{derived.phoneDisplay}</a>
+      </p>
+      <p class="lp-footer-legal">{derived.copyrightLine}</p>
+      <slot name="disclosures" />
+    </footer>
+
+    <style>
+      .lp-body {
+        background: var(--brand-surface);
+        color: var(--brand-ink);
+        font-family: var(--brand-font-body);
+        margin: 0;
+      }
+      /* Same pattern as BaseLayout's skip link. */
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        z-index: 200;
+        background: var(--brand-accent);
+        color: var(--brand-night);
+        padding: 12px 18px;
+        font-weight: 700;
+        border-radius: 0 0 12px 0;
+      }
+      .skip-link:focus {
+        left: 0;
+      }
+      .lp-advertorial {
+        background: var(--brand-surface-alt);
+        color: var(--brand-ink-muted);
+        font-family: var(--brand-font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-align: center;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+      }
+      .lp-header {
+        display: flex;
+        justify-content: center;
+        padding: 1.25rem 1rem;
+        background: var(--brand-night);
+      }
+      .lp-header img {
+        height: 40px;
+        width: auto;
+      }
+      /*
+        No max-width here. Each section already constrains itself with .wrap;
+        constraining again nested the two and squeezed the hero into a column
+        about half the width it should be. One thing owns the measure.
+      */
+      .lp-main {
+        width: 100%;
+      }
+      .lp-footer {
+        margin-top: 3.5rem;
+        padding: 2rem 1.25rem 3rem;
+        background: var(--brand-night);
+        color: var(--brand-on-dark);
+        text-align: center;
+      }
+      .lp-footer-name {
+        font-family: var(--brand-font-display);
+        font-weight: 700;
+        margin: 0 0 0.35rem;
+      }
+      .lp-footer-line {
+        margin: 0.2rem 0;
+        font-size: 0.9rem;
+      }
+      .lp-footer-line a {
+        color: var(--brand-accent-soft);
+      }
+      .lp-footer-legal {
+        margin-top: 1rem;
+        font-size: 0.75rem;
+        color: var(--brand-on-dark-muted);
+      }
+    </style>
+  </body>
+</html>

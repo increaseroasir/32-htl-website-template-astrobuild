@@ -10,20 +10,24 @@
     "preview": "wrangler dev",
     "check": "astro check",
     "client:use": "node scripts/use-client.mjs",
-    "db:apply:local": "wrangler d1 execute DB --local --file=./db/schema.sql",
-    "db:apply:remote": "wrangler d1 execute DB --remote --file=./db/schema.sql",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:apply:local": "echo 'DEPRECATED \u2014 use npm run db:migrate:local' && wrangler d1 execute DB --local --file=./db/schema.sql",
+    "db:apply:remote": "echo 'DEPRECATED \u2014 use npm run db:migrate:remote' && wrangler d1 execute DB --remote --file=./db/schema.sql",
     "db:seed:local": "wrangler d1 execute DB --local --file=./db/seed.example.sql",
     "gate": "node scripts/gate.mjs",
     "gate:fast": "node scripts/gate.mjs --no-render",
+    "gate:test": "node scripts/gate.test.mjs",
+    "test:lib": "node --import ./tests/lib/register.mjs --test \"tests/lib/*.test.mjs\"",
     "deploy": "npm run build && npm run gate && wrangler deploy"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "13.7.0",
-    "@astrojs/react": "5.0.7",
+    "@astrojs/cloudflare": "14.2.1",
+    "@astrojs/react": "6.0.2",
     "@astrojs/sitemap": "3.7.3",
     "@nanostores/react": "^1.1.0",
     "@tailwindcss/vite": "4.3.3",
-    "astro": "6.4.8",
+    "astro": "7.2.1",
     "nanostores": "^1.4.2",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -32,17 +36,17 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
-    "@cloudflare/workers-types": "5.20260809.1",
+    "@cloudflare/workers-types": "5.20260813.1",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "typescript": "5.9.3",
-    "vite": "7.3.6",
-    "wrangler": "4.120.0"
+    "vite": "8.2.1",
+    "wrangler": "4.122.0"
   },
   "engines": {
-    "node": ">=20.10.0"
+    "node": ">=22.12.0"
   },
   "overrides": {
-    "vite": "7.3.6"
+    "vite": "8.2.1"
   }
 }

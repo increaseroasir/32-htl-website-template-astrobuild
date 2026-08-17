@@ -1,0 +1,144 @@
+---
+/**
+ * FINANCING.
+ *
+ * Every word on this page comes from `site.financing` in config. There is not
+ * a single rate, term, or approval claim in this file — those are client facts
+ * and, unlike a phone number, a wrong one is a regulatory problem rather than
+ * just an embarrassing one.
+ *
+ * If the client has no financing offer, `site.financing` is null and this
+ * route returns 404. That is not a hole: the gate crawls every nav link, so a
+ * config that advertises /financing without configuring it fails the gate
+ * instead of shipping a dead link. Either configure it or remove the nav item.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import LeadQuiz from '../components/LeadQuiz.astro';
+import { site, derived } from '../config';
+
+export const prerender = false;
+
+const fin = site.financing;
+
+if (!fin) {
+  // Branded 404, not a blank body (I-16). rewrite renders /404 in place
+  // while keeping this URL — the response status comes from 404.astro.
+  return Astro.rewrite('/404');
+}
+---
+
+<BaseLayout title={fin.headline} description={fin.blurb} path="/financing">
+  <section class="fin-head">
+    <div class="wrap">
+      <p class="eyebrow">Financing</p>
+      <h1>{fin.headline}</h1>
+      <p class="fin-sub">{fin.blurb}</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Breadcrumbs trail={[{ label: 'Financing', href: '/financing' }]} />
+  </div>
+
+  <section class="fin-body wrap">
+    <div class="fin-main">
+      <ul class="fin-points">
+        {fin.bullets.map((b) => <li>{b}</li>)}
+      </ul>
+
+      {fin.lenderName && <p class="fin-lender">Financing provided by {fin.lenderName}.</p>}
+
+      {
+        fin.applyUrl && (
+          <a class="btn btn-gold" href={fin.applyUrl} rel="noopener" target="_blank">
+            Start an application
+          </a>
+        )
+      }
+
+      <p class="fin-call">
+        Rather ask a person? Call <a href={derived.telHref}>{derived.phoneDisplay}</a> during
+        store hours.
+      </p>
+
+      {/*
+        The disclaimer is required by the schema, and it renders on the page
+        rather than in a tooltip or a modal. Terms that a customer has to hunt
+        for are terms that were not really disclosed.
+      */}
+      <p class="fin-disclaimer">{fin.disclaimer}</p>
+    </div>
+
+    <aside class="fin-aside">
+      <LeadQuiz
+        sourcePage="/financing"
+        heading="What are you financing?"
+        variant="secondary"
+        hydrate="load"
+      />
+    </aside>
+  </section>
+</BaseLayout>
+
+<style>
+  .fin-head {
+    background: var(--brand-night);
+    color: var(--brand-on-dark);
+    padding: 3rem 0 2.5rem;
+  }
+  .fin-head h1 {
+    font-family: var(--brand-font-display);
+    font-size: clamp(1.9rem, 5.5vw, 2.8rem);
+    margin: 0.4rem 0 0;
+  }
+  .fin-sub {
+    margin: 0.85rem 0 0;
+    max-width: 50ch;
+    color: var(--brand-on-dark-muted);
+  }
+  .fin-body {
+    display: grid;
+    gap: 2.5rem;
+    padding: 2.5rem 0 4rem;
+  }
+  .fin-points {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+  }
+  .fin-points li {
+    position: relative;
+    padding: 0.6rem 0 0.6rem 1.9rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+  }
+  .fin-points li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--brand-accent-dark);
+    font-weight: 700;
+  }
+  .fin-lender {
+    color: var(--brand-ink-muted);
+    margin: 0 0 1.25rem;
+  }
+  .fin-call {
+    margin: 1.5rem 0 0;
+  }
+  .fin-disclaimer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--brand-ink-muted);
+  }
+
+  @media (min-width: 900px) {
+    .fin-body {
+      grid-template-columns: 1.15fr 1fr;
+      gap: 3rem;
+    }
+  }
+</style>

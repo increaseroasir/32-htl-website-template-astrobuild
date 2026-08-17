@@ -101,11 +101,21 @@ export function buildGhlTags(input: {
   productSlug: string;
   utmSource: string;
   utmCampaign: string;
+  /** Inventory name from D1 enrichment (Job 4) → "Model Interest - <name>". */
+  productName?: string;
+  /** Admin-curated per-product tags (products.ghl_tags) — passed through. */
+  productTags?: string[];
 }): string[] {
   const tags = ['website-lead'];
   if (input.category) tags.push(`category-${input.category}`);
   if (input.productSlug) tags.push(`product-${input.productSlug}`);
   if (input.utmSource) tags.push(`source-${input.utmSource}`);
   if (input.utmCampaign) tags.push(`campaign-${input.utmCampaign}`);
+  // The salesperson-facing tag from the Sun Pool build. GHL stores tags
+  // lowercased, so the map below costs nothing and keeps one code path.
+  if (input.productName) tags.push(`model interest - ${input.productName}`);
+  for (const tag of input.productTags ?? []) {
+    if (tag.trim()) tags.push(tag.trim());
+  }
   return tags.map((t) => t.toLowerCase().slice(0, 60));
 }

@@ -67,6 +67,36 @@ const orNull = (v) => (blank(v) ? null : v);
 
 export class IntakeError extends Error {}
 
+/** null unless the client actually offers financing AND stated the terms. */
+function assembleFinancing(fin) {
+  if (!fin || typeof fin !== 'object') return null;
+  const filled = [fin.headline, fin.blurb, fin.disclaimer].some((v) => !blank(v));
+  const bullets = (fin.bullets ?? []).filter((b) => !blank(b));
+  if (!filled && bullets.length === 0) return null;
+
+  const missing = [];
+  if (blank(fin.headline)) missing.push('headline');
+  if (blank(fin.blurb)) missing.push('blurb');
+  if (bullets.length === 0) missing.push('bullets');
+  if (blank(fin.disclaimer)) missing.push('disclaimer');
+  if (missing.length) {
+    throw new IntakeError(
+      `Financing is partly filled in — missing: ${missing.join(', ')}. ` +
+        `Either complete it or clear the whole section. An offer published without its ` +
+        `qualifying terms is the part that carries legal risk.`,
+    );
+  }
+
+  return {
+    headline: fin.headline,
+    blurb: fin.blurb,
+    bullets,
+    lenderName: orNull(fin.lenderName),
+    applyUrl: orNull(fin.applyUrl),
+    disclaimer: fin.disclaimer,
+  };
+}
+
 export function assembleConfig(intake) {
   if (!intake || typeof intake !== 'object') throw new IntakeError('Intake must be an object.');
   const b = intake.business ?? {};
@@ -194,6 +224,42 @@ export function assembleConfig(intake) {
 
     categories,
     serviceAreas: intake.serviceAreas ?? [],
+
+    /**
+     * Financing is all-or-nothing. A partly-filled block would render a page
+     * advertising an offer with no qualifying terms on it, which is the one
+     * shape of this page that is worse than not having it.
+     */
+    financing: assembleFinancing(intake.financing),
+
+    /**
+     * A default homepage that needs no copy from anyone. The hero headline is
+     * null so it falls back to the tagline; the category row builds itself
+     * from the checked categories; the product row reads live inventory.
+     * Reviews, stats, comparisons and FAQs are added later from real material
+     * — they are the sections that cannot be invented.
+     */
+    homepage: {
+      title: null,
+      description: null,
+      sections: [
+        { type: 'hero', headline: null, actions: [{ label: 'Shop Inventory', href: '/inventory' }] },
+        { type: 'categories', heading: 'What we sell' },
+        {
+          type: 'products',
+          heading: 'On the floor now',
+          limit: 4,
+          moreLink: { label: 'See everything in stock', href: '/inventory' },
+        },
+        {
+          type: 'cta',
+          heading: 'Not sure which one fits?',
+          buttonLabel: 'What are you shopping for?',
+          subtext: "Tell us what you're shopping for and we'll send current pricing on what's in stock.",
+        },
+      ],
+      disclosures: [],
+    },
 
     integrations: {
       d1BindingName: defaultFor('integrations.d1BindingName'),

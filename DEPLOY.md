@@ -28,7 +28,7 @@ required.
 Open `src/config/client.config.ts` — or copy a client file over it:
 
 ```bash
-npm run client:use sun-pool
+npm run client:use lakeside-hot-tubs
 ```
 
 **Every field must be true for this client.** The gate blocks obvious
@@ -56,8 +56,8 @@ launch:
 ## 2. Create the database and the image bucket
 
 ```bash
-wrangler d1 create sun-pool-inventory
-wrangler r2 bucket create sun-pool-product-images
+wrangler d1 create lakeside-inventory
+wrangler r2 bucket create lakeside-product-images
 ```
 
 The first command prints a `database_id`. Copy it.
@@ -74,12 +74,12 @@ Open `wrangler.toml`. Uncomment both blocks and paste your values:
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "sun-pool-inventory"
+database_name = "lakeside-inventory"
 database_id = "paste-the-id-from-step-2"
 
 [[r2_buckets]]
 binding = "PRODUCT_IMAGES"
-bucket_name = "sun-pool-product-images"
+bucket_name = "lakeside-product-images"
 ```
 
 Also set the Worker `name` at the top of the file to something client-specific.
@@ -112,7 +112,20 @@ wrangler secret put GHL_API_KEY
 wrangler secret put GHL_LOCATION_ID
 wrangler secret put META_PIXEL_ID
 wrangler secret put META_CAPI_ACCESS_TOKEN
+wrangler secret put STAGE_WEBHOOK_SECRET     # openssl rand -hex 32
 ```
+
+Optional — the conversion value ladder. Skip these and the built-in
+defaults apply (0 / 75 / 300 / 600):
+
+```bash
+wrangler secret put META_VALUE_QUALIFIED
+wrangler secret put META_VALUE_SCHEDULE
+wrangler secret put META_VALUE_SHOWED
+```
+
+There is no `META_VALUE_PURCHASE`. Purchase carries the real sale value or
+it does not fire — see step 6b.
 
 Each prompts for the value and does not echo it.
 
@@ -143,6 +156,73 @@ decision after it.
 
 Optional: a second trigger on `product_style_selected`, and the Consent
 Manager if you need Consent Mode v2.
+
+---
+
+## 6b. Wire the pipeline stages back to Meta
+
+This is the half that makes the ad account learn. The website only ever
+sends `Lead`, and **`Lead` is worth 0**. Everything Meta optimises towards
+comes from the CRM.
+
+| Event | Value | When to fire it |
+|---|---|---|
+| `QualifiedLead` | 75 | someone confirmed it is a real buyer |
+| `Schedule` | 300 | an appointment is on the calendar |
+| `Showed` | 600 | they turned up |
+| `Purchase` | the real sale amount | closed |
+
+In GoHighLevel, build **one workflow per stage**. Trigger: *Opportunity
+Stage Changed*. Action: *Webhook*.
+
+```
+POST https://yoursite.com/api/lead-stage
+Authorization: Bearer <STAGE_WEBHOOK_SECRET>
+Content-Type: application/json
+
+{ "leadUuid": "{{contact.lead_uuid}}", "event": "Schedule" }
+```
+
+`lead_uuid` is the custom field the site already writes on every lead, so
+the contact carries it from the moment it arrives.
+
+For the closed-won workflow, add the money:
+
+```json
+{ "leadUuid": "{{contact.lead_uuid}}", "event": "Purchase", "value": 8450 }
+```
+
+Each workflow hardcodes the event name it means. **Your GHL stage names are
+never sent and never stored in the codebase** — rename a stage in GHL and
+nothing here breaks.
+
+Things worth knowing before you test it:
+
+- **A retry cannot double-count.** One stage event per lead, enforced by the
+  database. A repeat call returns `200` with `"duplicate": true` and sends
+  nothing.
+- **A failed send WILL retry correctly.** If Meta rejects the event, the
+  endpoint returns `502` and leaves the row unsent, so the next attempt
+  re-sends under the *same* event id.
+- **Purchase without a positive value is rejected with `400`.** That is
+  deliberate. A made-up sale figure teaches Meta to go and find more people
+  like whoever it thinks paid it.
+- **Meta rejects anything older than seven days.** A deal that sits in a
+  stage for two weeks and then moves will still fire with today's timestamp,
+  which is correct — the stage change is what happened today.
+
+Test one by hand before trusting the workflows:
+
+```bash
+curl -sS -X POST https://yoursite.com/api/lead-stage \
+  -H "Authorization: Bearer $STAGE_WEBHOOK_SECRET" \
+  -H 'Content-Type: application/json' \
+  -d '{"leadUuid":"PASTE_A_REAL_UUID","event":"QualifiedLead"}'
+```
+
+Expect `{"ok":true,...,"value":75,"actionSource":"system_generated"}`. Run it
+twice — the second should say `"duplicate":true`. Then check Events Manager:
+one `QualifiedLead`, received from Server, value 75.
 
 ---
 

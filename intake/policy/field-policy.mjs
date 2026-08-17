@@ -29,6 +29,8 @@ export const GROUPS = [
   { id: 'social', title: 'Social profiles', blurb: 'Footer icons AND schema.org sameAs come from these.' },
   { id: 'brand', title: 'Look and feel', blurb: 'Pre-filled with the navy + gold default. Override per client.' },
   { id: 'nav', title: 'Navigation', blurb: 'Category links are automatic. These are the extras.' },
+  { id: 'homepage', title: 'Homepage', blurb: 'The page is a list of sections. The generator lays out a sensible default; extra material is added later.' },
+  { id: 'financing', title: 'Financing', blurb: 'Optional. Leave the whole section blank if they do not offer it — the page then does not exist.' },
   { id: 'integrations', title: 'Integrations', blurb: 'On/off only. Keys and tokens are wrangler secrets, never config.' },
   { id: 'system', title: 'System', blurb: 'Set by the generator. Not shown on the form.' },
 ];
@@ -83,6 +85,8 @@ const D = {
   inkMuted: '#4A5268',
   onDark: '#C6D4EF',
   onDarkMuted: '#8FA6D2',
+  onDarkStrong: '#FFFFFF',
+  inkLift: '#2A3244',
 };
 
 const color = (key, label, help) => ({
@@ -254,7 +258,18 @@ export const FIELD_POLICY = {
   'social.linkedin': { source: 'ask', group: 'social', control: 'url', label: 'LinkedIn', example: null },
   'social.googleBusiness': { source: 'ask', group: 'social', control: 'url', label: 'Google Business Profile', example: null },
 
-  /* ---------------- brand: colours ---------------- */
+  /* ---------------- brand: theme + colour overrides ----------------
+     The DEFAULT PATH: pick a theme; all 23 tokens derive from its three
+     bases with contrast guaranteed. The colour fields below are OPTIONAL
+     overrides — the form asks for at most primary/accent/urgent. */
+  'brand.theme': {
+    source: 'ask',
+    group: 'brand',
+    control: 'select',
+    label: 'Theme',
+    help: "Picks the whole palette from three base colours. 'aqua' = water blue + warm amber. 'luxury' = near-black indigo + champagne gold. 'natural' = deep forest + honey oak. 'mono' = pure black & white, colour on the CTA only. Override primary/accent/urgent below to re-derive around this client's brand colour.",
+    example: 'aqua',
+  },
   'brand.colors.primary': color('primary', 'Primary', 'The main brand colour.'),
   'brand.colors.primaryMid': color('primaryMid', 'Primary — mid'),
   'brand.colors.deep': color('deep', 'Primary — deep', 'Hairline borders are derived from this at 12% opacity.'),
@@ -276,6 +291,8 @@ export const FIELD_POLICY = {
   'brand.colors.inkMuted': color('inkMuted', 'Secondary text'),
   'brand.colors.onDark': color('onDark', 'Text on dark'),
   'brand.colors.onDarkMuted': color('onDarkMuted', 'Secondary text on dark'),
+  'brand.colors.onDarkStrong': color('onDarkStrong', 'Full-strength text on dark', 'Headlines and icons on dark panels. Usually pure white.'),
+  'brand.colors.inkLift': color('inkLift', 'Ink — lifted', 'Gradient top over ink-dark surfaces (e.g. the sold pill).'),
 
   /* ---------------- brand: type, logos, radius ---------------- */
   'brand.fonts.display': {
@@ -377,6 +394,107 @@ export const FIELD_POLICY = {
     label: 'Areas served',
     help: 'One per line. Only places the business actually serves — these become footer links and schema.org claims.',
     example: ['Lakeside', 'El Cajon', 'Santee', 'East County San Diego'],
+  },
+
+  /* ---------------- homepage ---------------- */
+  'homepage.title': {
+    source: 'default',
+    group: 'homepage',
+    control: 'text',
+    label: 'Homepage title override',
+    help: 'Leave blank. Null falls back to the one-line description, so there is no second copy of it.',
+    example: null,
+  },
+  'homepage.description': {
+    source: 'default',
+    group: 'homepage',
+    control: 'textarea',
+    label: 'Homepage meta description override',
+    help: 'Leave blank — falls back to the one-line description.',
+    example: null,
+  },
+  'homepage.sections': {
+    source: 'composed',
+    group: 'homepage',
+    label: 'Homepage sections',
+    help: "The generator writes a default arrangement that needs no copy: the hero headline falls back to the tagline, the category row builds itself from the checked categories, and the product row reads live inventory. Reviews, stats, a comparison table and an FAQ are added afterwards when the client supplies real material — they cannot be invented.",
+  },
+  'homepage.disclosures': {
+    source: 'composed',
+    group: 'homepage',
+    label: 'Homepage small print',
+    help: 'Required only if a homepage section makes a superlative claim. The build fails without it in that case.',
+  },
+
+  /* ---------------- financing ---------------- */
+  'financing.headline': {
+    source: 'ask',
+    group: 'financing',
+    control: 'text',
+    label: 'Financing headline',
+    help: 'Leave this and the rest of the section blank if they do not offer financing — the /financing page then does not exist at all.',
+    example: null,
+  },
+  'financing.blurb': {
+    source: 'ask',
+    group: 'financing',
+    control: 'textarea',
+    label: 'Financing summary',
+    help: 'One or two sentences.',
+    example: null,
+  },
+  'financing.bullets': {
+    source: 'ask',
+    group: 'financing',
+    control: 'repeater',
+    label: 'Financing points',
+    help: 'One per line. Only what the client has CONFIRMED. Never guess a rate or a term — a wrong number here is a Truth-in-Lending problem, not a typo.',
+    example: null,
+  },
+  'financing.lenderName': {
+    source: 'ask',
+    group: 'financing',
+    control: 'text',
+    label: 'Lender name',
+    help: 'Who actually underwrites it. Optional.',
+    example: null,
+  },
+  'financing.applyUrl': {
+    source: 'ask',
+    group: 'financing',
+    control: 'url',
+    label: 'Application link',
+    help: "The lender's application page, if there is one. Optional.",
+    example: null,
+  },
+  'financing.disclaimer': {
+    source: 'ask',
+    group: 'financing',
+    control: 'textarea',
+    label: 'Financing disclaimer',
+    help: 'REQUIRED if financing is offered. The qualifying terms — "on approved credit", who the offer applies to, what expires when. An offer stated without its terms is the claim regulators care about.',
+    reviewWarnIfDefault: false,
+    example: null,
+  },
+
+  /* ---------------- display policy (C14 / O-12) ----------------
+     What a price is allowed to SAY. Policy, not style: silence is the
+     safe state, so both flags are explicit decisions, never derived. */
+  'display.showPrice': {
+    source: 'ask',
+    group: 'financing',
+    control: 'checkbox',
+    label: 'Show cash prices',
+    help: 'Off shows "Ask for current pricing" instead of a number. A price shown is a claim; some dealers may not publish one.',
+    example: true,
+  },
+  'display.showMonthly': {
+    source: 'ask',
+    group: 'financing',
+    control: 'checkbox',
+    label: 'Show monthly payments',
+    help: 'A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.',
+    example: false,
   },
 
   /* ---------------- integrations ---------------- */

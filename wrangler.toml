@@ -14,6 +14,10 @@ compatibility_flags = ["nodejs_compat"]
 # binding = "DB"                  # must match integrations.d1BindingName in config
 # database_name = "TODO-client-inventory"
 # database_id = "TODO-run: wrangler d1 create <name>"
+# migrations_dir = "db/migrations"  # REQUIRED — uncomment with the block above.
+#                                   # Schema changes are new files in db/migrations/,
+#                                   # applied with npm run db:migrate:local|remote.
+#                                   # Never edit db/schema.sql to change a live DB.
 
 # --- R2: product images (Phase 6) ---
 # [[r2_buckets]]

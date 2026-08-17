@@ -9,7 +9,7 @@
 --
 -- Note the deliberate trap on the last row: a SAUNA product, inserted
 -- while saunas are OFF in config. It exists to prove the guard. Insert
--- it, hit /api/inventory, and it must not come back. Turn saunas on in
+-- it, open /inventory, and it must not appear. Turn saunas on in
 -- client.config.ts and it appears — with no change to any SQL or code.
 -- ============================================================
 

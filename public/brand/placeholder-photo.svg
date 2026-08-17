@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- Generic demo placeholder. Material greys (the gate's whitelisted pair). -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef2f8"/>
+      <stop offset="1" stop-color="#e2e9f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <g fill="none" stroke="#b8c4d8" stroke-width="4">
+    <rect x="330" y="240" width="140" height="100" rx="10"/>
+    <circle cx="365" cy="272" r="12"/>
+    <path d="M338 330l45-45 30 30 40-50 47 65"/>
+  </g>
+  <text x="400" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#8fa0ba">placeholder photo</text>
+</svg>

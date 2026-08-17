@@ -10,6 +10,12 @@ dist/
 clients/_previous.config.ts.bak
 .dev.vars
 .dev.vars.*
+# ...but the EXAMPLE must be tracked, or a fresh clone has no list of
+# which secrets the site needs. Same exception as .env.example above.
+!.dev.vars.example
 
 # Intake layer: compiled copy of the template schema, rebuilt on every run.
 intake/.cache/
+
+# Scratch/quarantine — never tracked.
+_to_delete/

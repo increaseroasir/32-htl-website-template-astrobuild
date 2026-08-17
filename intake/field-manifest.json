@@ -49,6 +49,16 @@
       "blurb": "Category links are automatic. These are the extras."
     },
     {
+      "id": "homepage",
+      "title": "Homepage",
+      "blurb": "The page is a list of sections. The generator lays out a sensible default; extra material is added later."
+    },
+    {
+      "id": "financing",
+      "title": "Financing",
+      "blurb": "Optional. Leave the whole section blank if they do not offer it — the page then does not exist."
+    },
+    {
       "id": "integrations",
       "title": "Integrations",
       "blurb": "On/off only. Keys and tokens are wrangler secrets, never config."
@@ -60,11 +70,11 @@
     }
   ],
   "counts": {
-    "total": 83,
-    "ask": 38,
-    "default": 36,
+    "total": 98,
+    "ask": 47,
+    "default": 40,
     "fixed": 3,
-    "composed": 6
+    "composed": 8
   },
   "neverAsk": [
     {
@@ -618,9 +628,30 @@
       "example": null
     },
     {
+      "path": "brand.theme",
+      "type": "enum",
+      "required": false,
+      "nullable": false,
+      "default": "aqua",
+      "constraints": {
+        "enum": [
+          "aqua",
+          "luxury",
+          "natural",
+          "mono"
+        ]
+      },
+      "source": "ask",
+      "group": "brand",
+      "label": "Theme",
+      "help": "Picks the whole palette from three base colours. 'aqua' = water blue + warm amber. 'luxury' = near-black indigo + champagne gold. 'natural' = deep forest + honey oak. 'mono' = pure black & white, colour on the CTA only. Override primary/accent/urgent below to re-derive around this client's brand colour.",
+      "control": "select",
+      "example": "aqua"
+    },
+    {
       "path": "brand.colors.primary",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -636,7 +667,7 @@
     {
       "path": "brand.colors.primaryMid",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -651,7 +682,7 @@
     {
       "path": "brand.colors.deep",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -667,7 +698,7 @@
     {
       "path": "brand.colors.night",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -682,7 +713,7 @@
     {
       "path": "brand.colors.abyss",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -698,7 +729,7 @@
     {
       "path": "brand.colors.accent",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -714,7 +745,7 @@
     {
       "path": "brand.colors.accentSoft",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -730,7 +761,7 @@
     {
       "path": "brand.colors.accentDeep",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -745,7 +776,7 @@
     {
       "path": "brand.colors.accentDark",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -761,7 +792,7 @@
     {
       "path": "brand.colors.accentLift",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -776,7 +807,7 @@
     {
       "path": "brand.colors.accentPress",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -791,7 +822,7 @@
     {
       "path": "brand.colors.accentGlow",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -806,7 +837,7 @@
     {
       "path": "brand.colors.urgent",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -821,7 +852,7 @@
     {
       "path": "brand.colors.urgentLight",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -836,7 +867,7 @@
     {
       "path": "brand.colors.urgentDark",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -851,7 +882,7 @@
     {
       "path": "brand.colors.surface",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -866,7 +897,7 @@
     {
       "path": "brand.colors.surfaceAlt",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -881,7 +912,7 @@
     {
       "path": "brand.colors.ink",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -896,7 +927,7 @@
     {
       "path": "brand.colors.inkMuted",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -911,7 +942,7 @@
     {
       "path": "brand.colors.onDark",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -926,7 +957,7 @@
     {
       "path": "brand.colors.onDarkMuted",
       "type": "string",
-      "required": true,
+      "required": false,
       "nullable": false,
       "constraints": {
         "pattern": "^#[0-9a-fA-F]{6}$",
@@ -937,6 +968,38 @@
       "label": "Secondary text on dark",
       "control": "color",
       "example": "#8FA6D2"
+    },
+    {
+      "path": "brand.colors.onDarkStrong",
+      "type": "string",
+      "required": false,
+      "nullable": false,
+      "constraints": {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "format": "regex"
+      },
+      "source": "default",
+      "group": "brand",
+      "label": "Full-strength text on dark",
+      "help": "Headlines and icons on dark panels. Usually pure white.",
+      "control": "color",
+      "example": "#FFFFFF"
+    },
+    {
+      "path": "brand.colors.inkLift",
+      "type": "string",
+      "required": false,
+      "nullable": false,
+      "constraints": {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "format": "regex"
+      },
+      "source": "default",
+      "group": "brand",
+      "label": "Ink — lifted",
+      "help": "Gradient top over ink-dark surfaces (e.g. the sold pill).",
+      "control": "color",
+      "example": "#2A3244"
     },
     {
       "path": "brand.fonts.display",
@@ -1338,6 +1401,209 @@
         "Santee",
         "East County San Diego"
       ]
+    },
+    {
+      "path": "financing.headline",
+      "type": "string",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Financing headline",
+      "help": "Leave this and the rest of the section blank if they do not offer financing — the /financing page then does not exist at all.",
+      "control": "text",
+      "example": null
+    },
+    {
+      "path": "financing.blurb",
+      "type": "string",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Financing summary",
+      "help": "One or two sentences.",
+      "control": "textarea",
+      "example": null
+    },
+    {
+      "path": "financing.bullets",
+      "type": "array<string>",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "minLength": 1,
+        "element": {
+          "minLength": 1
+        }
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Financing points",
+      "help": "One per line. Only what the client has CONFIRMED. Never guess a rate or a term — a wrong number here is a Truth-in-Lending problem, not a typo.",
+      "control": "repeater",
+      "example": null
+    },
+    {
+      "path": "financing.lenderName",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Lender name",
+      "help": "Who actually underwrites it. Optional.",
+      "control": "text",
+      "example": null
+    },
+    {
+      "path": "financing.applyUrl",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "constraints": {
+        "format": "url"
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Application link",
+      "help": "The lender's application page, if there is one. Optional.",
+      "control": "url",
+      "example": null
+    },
+    {
+      "path": "financing.disclaimer",
+      "type": "string",
+      "required": true,
+      "nullable": false,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "ask",
+      "group": "financing",
+      "label": "Financing disclaimer",
+      "help": "REQUIRED if financing is offered. The qualifying terms — \"on approved credit\", who the offer applies to, what expires when. An offer stated without its terms is the claim regulators care about.",
+      "control": "textarea",
+      "example": null
+    },
+    {
+      "path": "display.showPrice",
+      "type": "boolean",
+      "required": false,
+      "nullable": false,
+      "default": true,
+      "source": "ask",
+      "group": "financing",
+      "label": "Show cash prices",
+      "help": "Off shows \"Ask for current pricing\" instead of a number. A price shown is a claim; some dealers may not publish one.",
+      "control": "checkbox",
+      "example": true
+    },
+    {
+      "path": "display.showMonthly",
+      "type": "boolean",
+      "required": false,
+      "nullable": false,
+      "default": false,
+      "source": "ask",
+      "group": "financing",
+      "label": "Show monthly payments",
+      "help": "A monthly payment is a CREDIT OFFER. The build refuses this flag unless the financing block above is filled in.",
+      "control": "checkbox",
+      "example": false
+    },
+    {
+      "path": "homepage.title",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "default",
+      "group": "homepage",
+      "label": "Homepage title override",
+      "help": "Leave blank. Null falls back to the one-line description, so there is no second copy of it.",
+      "control": "text",
+      "example": null
+    },
+    {
+      "path": "homepage.description",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "constraints": {
+        "minLength": 1
+      },
+      "source": "default",
+      "group": "homepage",
+      "label": "Homepage meta description override",
+      "help": "Leave blank — falls back to the one-line description.",
+      "control": "textarea",
+      "example": null
+    },
+    {
+      "path": "homepage.sections",
+      "type": "array<union>",
+      "required": false,
+      "nullable": false,
+      "default": [],
+      "constraints": {
+        "variants": [
+          "announcement",
+          "hero",
+          "stats",
+          "offercard",
+          "categories",
+          "products",
+          "imagecards",
+          "benefits",
+          "gallery",
+          "reviews",
+          "comparison",
+          "promise",
+          "splitcards",
+          "steps",
+          "faq",
+          "ctaband",
+          "cta",
+          "trust",
+          "bignumber"
+        ]
+      },
+      "source": "composed",
+      "group": "homepage",
+      "label": "Homepage sections",
+      "help": "The generator writes a default arrangement that needs no copy: the hero headline falls back to the tagline, the category row builds itself from the checked categories, and the product row reads live inventory. Reviews, stats, a comparison table and an FAQ are added afterwards when the client supplies real material — they cannot be invented."
+    },
+    {
+      "path": "homepage.disclosures",
+      "type": "array<string>",
+      "required": false,
+      "nullable": false,
+      "default": [],
+      "constraints": {
+        "element": {
+          "minLength": 1
+        }
+      },
+      "source": "composed",
+      "group": "homepage",
+      "label": "Homepage small print",
+      "help": "Required only if a homepage section makes a superlative claim. The build fails without it in that case."
     },
     {
       "path": "integrations.d1BindingName",

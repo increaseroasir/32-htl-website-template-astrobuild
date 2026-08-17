@@ -217,9 +217,16 @@ export const derived = {
   smsHref: `sms:${site.contact.smsPhone ?? site.contact.phone}`,
   emailHref: site.contact.email ? `mailto:${site.contact.email}` : null,
 
-  // Identity
-  yearsInBusiness: new Date().getFullYear() - site.identity.foundedYear,
-  copyrightLine: `© ${new Date().getFullYear()} ${site.identity.name}. All rights reserved.`,
+  // Identity — GETTERS on purpose. This module initialises in the Worker's
+  // global scope, where Cloudflare freezes the clock at 0; a plain property
+  // would bake in "© 1970" and a negative years-in-business. A getter
+  // evaluates when a page reads it — inside a request, where time is real.
+  get yearsInBusiness(): number {
+    return new Date().getFullYear() - site.identity.foundedYear;
+  },
+  get copyrightLine(): string {
+    return `© ${new Date().getFullYear()} ${site.identity.name}. All rights reserved.`;
+  },
 
   // Address + maps
   addressOneLine,

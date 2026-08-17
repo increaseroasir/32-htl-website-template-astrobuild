@@ -1,9 +1,10 @@
 -- ============================================================
 -- D1 SCHEMA — hot tub store template
 --
--- Apply with:
---   npm run db:apply:local     (local dev database)
---   npm run db:apply:remote    (production — operator only)
+-- SOURCE OF db/migrations/0001_init.sql. This file is the human-readable
+-- reference only — future schema changes are NEW migration files in
+-- db/migrations/ (applied with npm run db:migrate:local|remote),
+-- never edits here.
 --
 -- Field names are deliberately IDENTICAL to the existing Sun Pool
 -- admin API (functions/api/admin.js). Phase 6 reuses that auth and
@@ -15,38 +16,22 @@
 
 
 -- ------------------------------------------------------------
--- categories — a DERIVED MIRROR of client.config.ts. Not a source.
---
--- Read this before adding a column: there is deliberately NO
--- `enabled` flag here. Whether a category exists on this site is
--- decided in ONE place — the `categories` block of the client
--- config — and this table is regenerated from it by
--- syncCategories() in src/lib/db.ts.
---
--- If enablement lived here too, a site could have saunas ON in the
--- database and OFF in config, which is precisely the class of split
--- truth this template exists to prevent. The table exists so
--- products have a category to join against and so the admin
--- dropdown has rows to list — nothing more.
+-- NOTE: there is deliberately NO categories table. Category labels,
+-- segments and ordering live in ONE place — the `categories` block
+-- of the client config. A database mirror of that config was removed
+-- (it had zero readers) so a site can never have saunas ON in the
+-- database and OFF in config — the class of split truth this
+-- template exists to prevent.
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS categories (
-  slug        TEXT PRIMARY KEY,        -- 'hot-tub'   (config + catalog key)
-  label       TEXT NOT NULL,           -- 'Hot Tubs'  (mirrored from config)
-  segment     TEXT NOT NULL UNIQUE,    -- 'hot-tubs'  (URL segment)
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  synced_at   INTEGER NOT NULL         -- last time config was mirrored here
-);
-
 
 -- ------------------------------------------------------------
 -- products — the inventory.
 --
--- `category` is NOT foreign-keyed to categories(slug) on purpose.
+-- `category` is a plain TEXT column, not a foreign key, on purpose.
 -- Turning a category off must never delete or block a client's
 -- product rows; it makes them invisible on the site while the data
 -- survives. Visibility is enforced in the query layer against the
--- config array, and syncCategories() REPORTS orphans rather than
--- destroying them.
+-- config array.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS products (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,6 +158,22 @@ CREATE TABLE IF NOT EXISTS lead_events (
 
 CREATE INDEX IF NOT EXISTS idx_events_lead  ON lead_events(lead_uuid);
 CREATE INDEX IF NOT EXISTS idx_events_id    ON lead_events(event_id);
+
+-- One pipeline-stage event per lead, ever.
+--
+-- CRM webhooks retry. Without this index, one booked appointment
+-- retried three times is three Schedule events at $300 each, and the
+-- bidding algorithm is told this lead was worth $900. The index makes
+-- the second write fail, and /api/lead-stage treats that failure as
+-- success so the CRM stops retrying.
+--
+-- PARTIAL, excluding 'Lead', on purpose: a visitor who submits the form
+-- twice legitimately produces two Lead rows, each with its own
+-- browser-generated event_id. Constraining those would break the
+-- website's own dedup pairing.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_stage_once
+  ON lead_events(lead_uuid, event_name)
+  WHERE event_name <> 'Lead';
 
 
 -- ------------------------------------------------------------

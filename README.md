@@ -1,6 +1,6 @@
 # Hot Tub Store Website Template
 
-A reusable Astro 6 template that generates client store sites. **This repo is the template, not a client site.**
+A reusable Astro 7 template that generates client store sites. **This repo is the template, not a client site.**
 
 The template exists to make one class of bug structurally impossible: the same fact drifting across many files. Everything a client site needs to know about itself lives in exactly one place — `src/config/client.config.ts`.
 
@@ -20,7 +20,7 @@ If you ever see the same fact typed into two files, **that is the bug**. Fix the
 
 ```bash
 npm install
-npm run client:use sun-pool     # or: copy any clients/*.config.ts over src/config/client.config.ts
+npm run client:use lakeside-hot-tubs     # or: copy any clients/*.config.ts over src/config/client.config.ts
 npm run build
 ```
 
@@ -49,11 +49,11 @@ The repo ships with a **placeholder** config (`deployMode: 'template'`), so a fr
 
 | Layer | Choice |
 |---|---|
-| Framework | Astro 6 (`6.4.8`) |
+| Framework | Astro 7 (`7.2.1`) |
 | Language | TypeScript, strict |
 | Styling | Tailwind CSS 4 via `@tailwindcss/vite` |
 | Islands | React — interactive components only |
-| Deploy target | Cloudflare **Workers** via `@astrojs/cloudflare` **v13** |
+| Deploy target | Cloudflare **Workers** via `@astrojs/cloudflare` **v14** |
 | Database | Cloudflare D1 |
 | Storage | Cloudflare R2 |
 | CRM | GoHighLevel (native `/api/lead`) |
@@ -61,17 +61,17 @@ The repo ships with a **placeholder** config (`deployMode: 'template'`), so a fr
 
 ### Two pinning rules that matter
 
-**1. `vite` is pinned to `7.3.6` in `devDependencies` and `overrides`. Do not remove it.**
+**1. `vite` is pinned (currently `8.2.1`) in `devDependencies` and `overrides`. Do not remove it.**
 
-Astro 6 runs on Vite 7. `@tailwindcss/vite` declares Vite as a *peer* with range `^5 || ^6 || ^7 || ^8`, so npm happily installs Vite **8** and hoists it to the root while Astro keeps a nested Vite 7. Two Vite copies break the SSR dependency optimiser with a baffling `require_dist is not a function` at build time. The pin plus the override guarantees exactly one Vite. Verify any time dependencies change:
+Astro 7 runs on Vite 8, and `@tailwindcss/vite` declares Vite as a *peer* with a wide range (`^5 || ^6 || ^7 || ^8`). Without the pin+override, a future Vite major can get hoisted to the root while Astro keeps a nested copy — two Vite copies break the SSR dependency optimiser with a baffling `require_dist is not a function` at build time (this bit the Astro 6 era of this repo). The pin plus the override guarantees exactly one Vite. Bump it deliberately (stay inside Astro's `^8` range); verify any time dependencies change:
 
 ```bash
-npm ls vite     # every line should say 7.3.6
+npm ls vite     # every line should say the pinned version
 ```
 
 **2. Do not use `@astrojs/tailwind`.** It peers to Astro ≤5 and Tailwind 3, and will not work here. Tailwind is wired through `@tailwindcss/vite` in `astro.config.ts`.
 
-Astro **7** and `@astrojs/cloudflare` **v14** now exist. This template deliberately stays on 6/v13 — the locked stack — rather than grabbing latest. Upgrading is a separate, deliberate project.
+Upgraded to Astro 7 / adapter v14 on 2026-08-13 (deliberately, as its own project). Two Workers landmines that upgrade surfaced, both now structural: the config schema uses a static year ceiling and time-derived values are getters, because **Cloudflare Workers freeze the clock at 0 in module scope** — any `new Date()` at init renders 1970.
 
 ---
 
@@ -96,8 +96,7 @@ src/lib/meta-capi.ts        Conversions API. Hashing + the dedup event_id.
 src/lib/ghl.ts              GoHighLevel contact upsert.
 src/lib/hash.ts             SHA-256 with Meta's normalisation rules.
 src/lib/admin-auth.ts       Reused Sun Pool auth. Do not redesign.
-src/pages/api/inventory.ts  Public read-only inventory API.
-db/schema.sql               D1 tables: categories, products, leads, lead_events,
+db/schema.sql               D1 tables: products, leads, lead_events,
                             admin_sessions.
 db/seed.example.sql         Local dev fixtures. Never apply to production.
 ```
@@ -136,7 +135,7 @@ These are not conventions to remember — the build fails if they are violated.
 | A disabled category cannot serve products | Every public query filters by `enabledCategorySlugs` — the same array the nav uses |
 | Drafts and deleted rows never reach a customer | Public status filter is an allow-list (`available`, `pending`, `sold`), not a deny-list |
 | Turning a category off never destroys data | Products stay in the table, become invisible, and are reported as orphans |
-| The categories table cannot become a second source of truth | It has no `enabled` column; config decides, the table mirrors |
+| Categories cannot become a second source of truth | There is no categories table; the config block is the only place they exist |
 
 ---
 
@@ -161,20 +160,19 @@ npm run db:apply:remote     # production - operator only
 
 ### Categories are config, not data
 
-`db/schema.sql` has a `categories` table, but it is a **one-way mirror of
-`client.config.ts`**, not a source of truth. It deliberately has no `enabled`
-column. Whether this site sells saunas is decided in exactly one place - the
-config - and `syncCategories()` rewrites the table to match.
+There is **no categories table**. Whether this site sells saunas is decided
+in exactly one place - the `categories` block of `client.config.ts`. Labels,
+URL segments and ordering all live there too.
 
 Every public query filters `category IN (...)` using `enabledCategorySlugs`,
 the same array the header nav renders from. So a sauna product can sit in the
 database, fully valid, and never appear anywhere on the site. Flip one config
 line and it appears in the API, the category route, and the nav together.
 
-Turning a category off never deletes anything. The rows stay; they become
-invisible; `syncCategories()` reports them as orphans so you know they exist.
+Turning a category off never deletes anything. The product rows stay; they
+simply become invisible until the category is enabled again.
 
-### Astro 6 changed how bindings are read
+### How bindings are read (since Astro 6)
 
 `Astro.locals.runtime.env` was **removed in Astro 6**. Bindings now come from
 the `cloudflare:workers` module:
@@ -297,6 +295,12 @@ npm run build && npm run gate
 
 `npm run deploy` runs both for you and will not deploy if the gate fails.
 
+**What a healthy run looks like (the acceptance rule):** on a client-mode
+config, **zero failures**. On the blank template, **exactly three** — `Config
+is in client mode`, `No placeholder facts`, `At least one category enabled` —
+the deliberate locks that keep the template undeployable. Anything else red,
+in either mode, is a real defect. The harness asserts this set exactly.
+
 It checks two different things, because they catch different bugs. **Source
 checks** read the repo — a hex code typed into a component, a category slug
 hardcoded, an admin link, a form field missing `autocomplete`. **Rendered
@@ -309,7 +313,7 @@ Proven to catch each of these by reintroducing them one at a time:
 |---|---|
 | Admin link back in the public footer | `No /admin link in any component` |
 | `product.category === 'hot-tub'` in a component | `No category slugs hardcoded outside src/config` |
-| A brand hex typed into a component | `No brand colour literals outside src/config` |
+| A brand hex typed into a component | `No brand colour literals outside src/config` — the only permitted literals are the two whitelisted material greys of the image-placeholder gradient |
 | Two labels for one destination | `One label per destination` |
 | `src="assets/logo.png"` | `No relative asset paths` |
 | Phone rendered as text, not a `tel:` link | `Every phone is a tel: link` |

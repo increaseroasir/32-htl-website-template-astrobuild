@@ -70,6 +70,10 @@ function unwrap(schema) {
     } else if (d.type === 'optional') {
       flags.optional = true;
       cur = d.innerType;
+    } else if (d.type === 'pipe') {
+      // A `.transform()` (theme → resolved colours). The INTAKE asks for the
+      // input shape, so walk the `in` side; the output is derived.
+      cur = d.in;
     } else break;
   }
   return { schema: cur, flags };

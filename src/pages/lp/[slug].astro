@@ -1,0 +1,93 @@
+---
+/**
+ * ONE ROUTE FOR EVERY PAID LANDING PAGE.
+ *
+ * Same principle as [category] and [category]/[slug]: adding a landing page
+ * is adding one config file, never a new page file. If you ever find yourself
+ * writing src/pages/lp/gutter-offer.astro, stop — that is the per-category
+ * page defect wearing a different hat.
+ *
+ * This route is excluded from the sitemap and disallowed in robots.txt, and
+ * the layout sends noindex. Three independent mechanisms, because a landing
+ * page leaking into the index is quiet and expensive.
+ */
+import PaidLayout from '../../layouts/PaidLayout.astro';
+import Render from '../../components/sections/Render.astro';
+import { findLanding } from '../../config/landings';
+import { collectFootnotes } from '../../config/sections.schema';
+
+// SSR, like every other dynamic route here. No getStaticPaths: the config
+// registry already knows every valid slug and anything else is a 404.
+export const prerender = false;
+
+const { slug } = Astro.params;
+const lp = slug ? findLanding(slug) : undefined;
+
+if (!lp) {
+  // Branded 404, not a blank body (I-16).
+  return Astro.rewrite('/404');
+}
+
+const sourcePage = `/lp/${lp.slug}`;
+
+/** Numbered to match the <sup> markers the section renderer emits. */
+const footnotes = collectFootnotes(lp.sections);
+---
+
+<PaidLayout title={lp.title} advertorialLabel={lp.advertorialLabel}>
+  <Render sections={lp.sections} sourcePage={sourcePage} />
+
+  <div slot="disclosures" class="lp-disclosures">
+    {
+      footnotes.length > 0 && (
+        <ol class="lp-footnotes">
+          {footnotes.map((f) => (
+            <li>{f}</li>
+          ))}
+        </ol>
+      )
+    }
+    {lp.disclosures.map((d) => <p class="lp-disclosure">{d}</p>)}
+    {
+      /*
+        The ONE link off this page, if the client configured one. Everything
+        else is a dead end on purpose.
+      */
+      lp.exitLink && (
+        <p class="lp-exit">
+          <a href={lp.exitLink.href}>{lp.exitLink.label}</a>
+        </p>
+      )
+    }
+  </div>
+</PaidLayout>
+
+<style>
+  .lp-disclosures {
+    margin-top: 1.25rem;
+    text-align: left;
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  .lp-footnotes {
+    margin: 0 0 0.75rem;
+    padding-left: 1.1rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--brand-on-dark-muted);
+  }
+  .lp-disclosure {
+    margin: 0.4rem 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--brand-on-dark-muted);
+  }
+  .lp-exit {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+  .lp-exit a {
+    color: var(--brand-on-dark-muted);
+  }
+</style>

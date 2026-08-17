@@ -107,7 +107,9 @@ const options = [
   .quiz-option {
     min-height: 60px;
     padding: 14px 12px;
-    border: 2px solid var(--brand-line);
+    /* line-strong, not line (N-04): a SELECTABLE control's boundary must
+       hit 3:1; the 12% hairline is for decoration only. */
+    border: 2px solid var(--brand-line-strong);
     border-radius: 14px;
     background: var(--brand-surface);
     font-family: var(--brand-font-display);
@@ -159,7 +161,8 @@ const options = [
     width: 100%;
     min-height: 52px;
     padding: 13px 15px;
-    border: 1px solid var(--brand-line);
+    /* line-strong (N-04): form inputs are interactive boundaries. */
+    border: 1px solid var(--brand-line-strong);
     border-radius: 12px;
     background: var(--brand-surface);
     font-family: var(--brand-font-body);

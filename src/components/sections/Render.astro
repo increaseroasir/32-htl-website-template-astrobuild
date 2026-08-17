@@ -1,0 +1,1214 @@
+---
+/**
+ * SECTION RENDERER — one dispatcher for every composed page.
+ *
+ * The homepage and every paid landing page render through this file. There is
+ * no second renderer, so a fix to how reviews look fixes them everywhere and
+ * a new section type is available to every page the moment it exists.
+ *
+ * Not a single string of client copy lives here. Every word arrives from the
+ * section config. What this file DOES own is the parts that must never be
+ * typed per client — the address, the hours, the phone, the product list —
+ * which it reads from `site`, `derived` and D1 at render time.
+ */
+import type { Section } from '../../config/sections.schema';
+import { site, derived, enabledCategories } from '../../config';
+import { getDb, listProducts, type Product } from '../../lib/db';
+import LeadQuiz from '../LeadQuiz.astro';
+import ProductCard from '../ProductCard.astro';
+
+interface Props {
+  sections: readonly Section[];
+  /** Where a lead submitted from this page should be attributed. */
+  sourcePage: string;
+}
+
+const { sections, sourcePage } = Astro.props;
+
+/**
+ * Inventory is fetched once here rather than inside the loop, because Astro
+ * frontmatter is the only place that can await. Each `products` section gets
+ * its own slice, keyed by its position.
+ */
+const db = getDb();
+const productsBySection = new Map<number, Product[]>();
+for (const [i, section] of sections.entries()) {
+  if (section.type !== 'products') continue;
+  if (!db) {
+    productsBySection.set(i, []);
+    continue;
+  }
+  const rows = await listProducts(db, section.category ? { category: section.category } : {});
+  productsBySection.set(i, rows.slice(0, section.limit));
+}
+
+/** Footnote markers numbered in the order they appear on the page. */
+let fnCount = 0;
+const marker = () => String(++fnCount);
+
+/** Splits a headline so the configured words render in the accent colour. */
+function splitHighlight(headline: string, highlight: readonly string[]) {
+  if (highlight.length === 0) return [{ text: headline, accent: false }];
+  const escaped = highlight.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const parts = headline.split(new RegExp(`(${escaped.join('|')})`, 'g'));
+  return parts.filter(Boolean).map((text) => ({ text, accent: highlight.includes(text) }));
+}
+
+const btnClass = (style: string) => (style === 'primary' ? 'btn btn-gold' : 'btn btn-outline');
+---
+
+{
+  sections.map((section, i) => {
+    switch (section.type) {
+      /* -------------------- ANNOUNCEMENT -------------------- */
+      case 'announcement':
+        return (
+          <div class="sx-announce">
+            <div class="wrap sx-announce-inner">
+              {section.badge && <span class="sx-announce-badge">{section.badge}</span>}
+              {section.href ? (
+                <a href={section.href}>
+                  {section.text} <span aria-hidden="true">&#8594;</span>
+                </a>
+              ) : (
+                <span>{section.text}</span>
+              )}
+            </div>
+          </div>
+        );
+
+      /* -------------------- HERO -------------------- */
+      case 'hero':
+        return (
+          <section
+            class:list={['sx-hero', section.backgroundImage && 'sx-hero--image']}
+            style={section.backgroundImage ? `--sx-hero-bg:url('${section.backgroundImage}')` : undefined}
+          >
+            <div class="wrap sx-hero-inner">
+              <div class="sx-hero-copy">
+                {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+                <h1 class="sx-h1">
+                  {/* null headline falls back to the tagline in config. */}
+                  {splitHighlight(section.headline ?? site.identity.tagline, section.highlight).map((p) =>
+                    p.accent ? <span class="sx-accent">{p.text}</span> : <>{p.text}</>,
+                  )}
+                </h1>
+                {section.subhead && <p class="sx-hero-sub">{section.subhead}</p>}
+                {section.promo && <p class="sx-promo">{section.promo}</p>}
+                {section.bullets.length > 0 && (
+                  <ul class="sx-bullets sx-bullets--dark">
+                    {section.bullets.map((b) => (
+                      <li>
+                        {b.text}
+                        {b.superlative && <sup class="sx-fn">{marker()}</sup>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {section.actions.length > 0 && (
+                  <div class="sx-actions">
+                    {section.actions.map((a) => (
+                      <a class={btnClass(a.style)} href={a.href}>
+                        {a.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {/* Phone is read from config, never typed into a section. */}
+                <p class="sx-hero-call">
+                  Call or text <a href={derived.telHref}>{derived.phoneDisplay}</a> — quick replies
+                  during store hours.
+                </p>
+              </div>
+
+              {section.leadCard && (
+                <aside class="sx-hero-card">
+                  <h2 class="sx-card-h">{section.leadCard.heading}</h2>
+                  {section.leadCard.subtext && <p class="sx-card-sub">{section.leadCard.subtext}</p>}
+                  {/*
+                    No `heading` passed on purpose. The card already prints the
+                    offer above; letting the quiz print it again put the same
+                    sentence on screen twice, which is the duplication defect
+                    in miniature.
+                  */}
+                  <LeadQuiz sourcePage={sourcePage} hydrate="load" />
+                  {section.leadCard.footnote && (
+                    <p class="sx-card-fn">{section.leadCard.footnote}</p>
+                  )}
+                </aside>
+              )}
+            </div>
+          </section>
+        );
+
+      /* -------------------- STATS -------------------- */
+      case 'stats':
+        return (
+          <section class="sx-stats">
+            <div class="wrap sx-stats-inner">
+              {section.items.map((s) => (
+                <div class="sx-stat">
+                  <p class="sx-stat-value">{s.value}</p>
+                  <p class="sx-stat-label">
+                    {s.label}
+                    {s.claim?.superlative && <sup class="sx-fn">{marker()}</sup>}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- OFFER CARD -------------------- */
+      case 'offercard':
+        return (
+          <section class="sx-band sx-band--alt">
+            <div class="wrap">
+              <div class="sx-offer">
+                {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+                <h2 class="sx-h2">{section.heading}</h2>
+                {section.body && <p class="sx-body">{section.body}</p>}
+                {section.bullets.length > 0 && (
+                  <ul class="sx-bullets">
+                    {section.bullets.map((b) => (
+                      <li>
+                        {b.text}
+                        {b.superlative && <sup class="sx-fn">{marker()}</sup>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {section.actions.length > 0 && (
+                  <div class="sx-actions">
+                    {section.actions.map((a) => (
+                      <a class={btnClass(a.style)} href={a.href}>
+                        {a.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+
+      /* -------------------- CATEGORIES -------------------- */
+      case 'categories': {
+        // Built from the enabled-categories array, so it cannot list
+        // something the client does not sell.
+        if (enabledCategories.length === 0) return null;
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            <h2 class="sx-h2">{section.heading}</h2>
+            {section.body && <p class="sx-lede">{section.body}</p>}
+            <div class="sx-imagecards">
+              {enabledCategories.map((c, n) => (
+                <a class="sx-imagecard" href={c.href}>
+                  {section.showImages && c.heroImage && (
+                    <img src={c.heroImage} alt="" width="420" height="300" loading={n < 2 ? 'eager' : 'lazy'} decoding="async" />
+                  )}
+                  <div class="sx-imagecard-body">
+                    <h3>{c.label}</h3>
+                    <p>{c.blurb}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+      }
+
+      /* -------------------- PRODUCTS -------------------- */
+      case 'products': {
+        const rows = productsBySection.get(i) ?? [];
+        // No products means no section. An empty grid under a confident
+        // heading is worse than the heading not being there.
+        if (rows.length === 0) return null;
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            <h2 class="sx-h2">{section.heading}</h2>
+            {section.body && <p class="sx-lede">{section.body}</p>}
+            <div class="sx-grid">
+              {rows.map((product, n) => (
+                <ProductCard product={product} index={n} />
+              ))}
+            </div>
+            {section.disclaimer && <p class="sx-smallprint">{section.disclaimer}</p>}
+            {section.moreLink && (
+              <p class="sx-more">
+                <a href={section.moreLink.href}>
+                  {section.moreLink.label} <span aria-hidden="true">&#8594;</span>
+                </a>
+              </p>
+            )}
+          </section>
+        );
+      }
+
+      /* -------------------- IMAGE CARDS -------------------- */
+      case 'imagecards':
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+            <div class="sx-imagecards">
+              {section.items.map((item) => (
+                <a class="sx-imagecard" href={item.href}>
+                  {item.image && (
+                    <img src={item.image} alt="" width="420" height="300" loading="lazy" decoding="async" />
+                  )}
+                  <div class="sx-imagecard-body">
+                    <h3>{item.title}</h3>
+                    {item.body && <p>{item.body}</p>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- BENEFITS -------------------- */
+      case 'benefits':
+        return (
+          <section class="sx-section wrap">
+            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+            <div class="sx-benefits">
+              {section.items.map((item) => (
+                <div class="sx-benefit">
+                  {item.icon && <img src={item.icon} alt="" width="32" height="32" loading="lazy" />}
+                  <h3 class="sx-h3">{item.title}</h3>
+                  <p class="sx-body">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- GALLERY -------------------- */
+      case 'gallery':
+        return (
+          <section class="sx-section wrap">
+            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+            <div class="sx-gallery">
+              {section.images.map((img, n) => (
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  width="340"
+                  height="255"
+                  loading={n < 2 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- REVIEWS -------------------- */
+      case 'reviews':
+        return (
+          <section class="sx-band sx-band--alt">
+            <div class="wrap">
+              {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+              {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+              <div class="sx-reviews">
+                {section.items.map((r) => (
+                  <figure class="sx-review">
+                    <p class="sx-stars" aria-label={`${r.rating} out of 5`}>
+                      {'★'.repeat(Math.round(r.rating))}
+                    </p>
+                    <blockquote>{r.quote}</blockquote>
+                    {r.detail && <p class="sx-detail">{r.detail}</p>}
+                    <figcaption>
+                      <span class="sx-avatar" aria-hidden="true">
+                        {r.name.slice(0, 1)}
+                      </span>
+                      <span>
+                        <span class="sx-review-name">{r.name}</span>
+                        {(r.source || r.date || r.location) && (
+                          <span class="sx-review-meta">
+                            {[r.source, r.location, r.date].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+              {section.aggregate && (
+                <p class="sx-aggregate">
+                  Rated {section.aggregate.rating} out of 5 across {section.aggregate.count}
+                  {section.aggregate.source ? ` ${section.aggregate.source}` : ''} reviews
+                </p>
+              )}
+            </div>
+          </section>
+        );
+
+      /* -------------------- COMPARISON -------------------- */
+      case 'comparison':
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            <h2 class="sx-h2">{section.heading}</h2>
+            {section.body && <p class="sx-lede">{section.body}</p>}
+            <div class="sx-compare-scroll">
+              <table class="sx-compare">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="sx-sr">Criterion</span></th>
+                    {/* Falls back to the business name from config. */}
+                    <th scope="col" class="sx-compare-us">{section.usLabel ?? site.identity.name}</th>
+                    <th scope="col" class="sx-compare-them">{section.themLabel}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.rows.map((row) => (
+                    <tr>
+                      <th scope="row">{row.label}</th>
+                      <td class="sx-compare-us-cell">&#10003; {row.us}</td>
+                      <td class="sx-compare-them-cell">&#10005; {row.them}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        );
+
+      /* -------------------- PROMISE -------------------- */
+      case 'promise':
+        return (
+          <section class="sx-promise">
+            <div class="wrap sx-promise-inner">
+              {section.badgeValue && (
+                <div class="sx-badge">
+                  <span class="sx-badge-value">{section.badgeValue}</span>
+                  {section.badgeLabel && <span class="sx-badge-label">{section.badgeLabel}</span>}
+                </div>
+              )}
+              <div>
+                <h2 class="sx-h2 sx-h2--dark">{section.heading}</h2>
+                {section.body && <p class="sx-body sx-body--dark">{section.body}</p>}
+                <ul class="sx-checks">
+                  {section.bullets.map((b) => (
+                    <li>
+                      {b.text}
+                      {b.superlative && <sup class="sx-fn">{marker()}</sup>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        );
+
+      /* -------------------- SPLIT CARDS -------------------- */
+      case 'splitcards':
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+            <div class="sx-splits">
+              {section.items.map((item) => (
+                <article class="sx-split">
+                  {item.image && (
+                    <img src={item.image} alt="" width="520" height="330" loading="lazy" decoding="async" />
+                  )}
+                  <div class="sx-split-body">
+                    <h3 class="sx-h3">{item.title}</h3>
+                    <p class="sx-body">{item.body}</p>
+                    {/* Address and hours are READ from config, never typed here. */}
+                    {item.showAddress && (
+                      <address class="sx-split-address">{derived.addressOneLine}</address>
+                    )}
+                    {item.showHours && (
+                      <p class="sx-split-hours">
+                        {derived.hoursDisplay.map((h) => h.label).join(' · ')}
+                      </p>
+                    )}
+                    {item.actions.length > 0 && (
+                      <div class="sx-actions">
+                        {item.actions.map((a) => (
+                          <a class={btnClass(a.style)} href={a.href}>
+                            {a.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- STEPS -------------------- */
+      case 'steps':
+        return (
+          <section class="sx-section wrap">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            <h2 class="sx-h2">{section.heading}</h2>
+            <ol class="sx-steps">
+              {section.items.map((item, n) => (
+                <li class="sx-step">
+                  <span class="sx-step-num">{String(n + 1).padStart(2, '0')}</span>
+                  <h3 class="sx-step-title">{item.title}</h3>
+                  <p class="sx-body">{item.body}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        );
+
+      /* -------------------- FAQ -------------------- */
+      case 'faq':
+        return (
+          <section class="sx-section wrap sx-faq-section">
+            {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+            {section.heading && <h2 class="sx-h2">{section.heading}</h2>}
+            <div class="sx-faq">
+              {section.items.map((item, n) => (
+                <details class="sx-faq-item" open={n === 0}>
+                  <summary>{item.q}</summary>
+                  <p class="sx-body">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        );
+
+      /* -------------------- CTA BAND -------------------- */
+      case 'ctaband':
+        return (
+          <section class:list={['sx-ctaband', section.tone === 'light' && 'sx-ctaband--light']}>
+            <div class="wrap">
+              {section.eyebrow && <p class="eyebrow">{section.eyebrow}</p>}
+              <h2 class="sx-h2 sx-h2--center">{section.heading}</h2>
+              {section.body && <p class="sx-ctaband-body">{section.body}</p>}
+              <div class="sx-actions sx-actions--center">
+                {section.actions.map((a) => (
+                  <a class={btnClass(a.style)} href={a.href}>
+                    {a.label}
+                  </a>
+                ))}
+              </div>
+              {section.footnote && <p class="sx-smallprint sx-smallprint--center">{section.footnote}</p>}
+            </div>
+          </section>
+        );
+
+      /* -------------------- LEAD FORM -------------------- */
+      case 'cta':
+        return (
+          <section class="sx-section wrap">
+            <h2 class="sx-h2">{section.heading}</h2>
+            {section.subtext && <p class="sx-lede">{section.subtext}</p>}
+            {/*
+              The SAME quiz every other page uses — same validation, same
+              autocomplete tokens, same event_id dedup, same CRM sync. No page
+              gets its own form to fall out of step.
+            */}
+            <LeadQuiz
+              sourcePage={sourcePage}
+              heading={section.buttonLabel}
+              variant={i === 0 ? 'primary' : 'secondary'}
+              hydrate={i < 3 ? 'load' : 'visible'}
+            />
+          </section>
+        );
+
+      /* -------------------- TRUST -------------------- */
+      case 'trust':
+        return (
+          <section class="sx-trust">
+            <div class="wrap">
+              <ul class="sx-trust-items">
+                {section.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+              {section.logos.length > 0 && (
+                <div class="sx-trust-logos">
+                  {section.logos.map((l) => (
+                    <img src={l.src} alt={l.alt} height="28" width="90" loading="lazy" />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+
+      /* -------------------- BIG NUMBER -------------------- */
+      case 'bignumber':
+        return (
+          <section class="sx-bignumber">
+            <p class="sx-bignumber-value">{section.value}</p>
+            <p class="sx-bignumber-label">
+              {section.label}
+              {section.claim?.superlative && <sup class="sx-fn">{marker()}</sup>}
+            </p>
+          </section>
+        );
+    }
+  })
+}
+
+<style>
+  /* ---------- shared ---------- */
+  .sx-section {
+    padding: 3.25rem 0;
+  }
+  .sx-band {
+    padding: 3.25rem 0;
+  }
+  .sx-band--alt {
+    background: var(--brand-surface-alt);
+  }
+  .sx-h1 {
+    font-family: var(--brand-font-display);
+    font-size: clamp(2rem, 6vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 800;
+    margin: 0.4rem 0 0;
+    max-width: 18ch;
+  }
+  .sx-accent {
+    color: var(--brand-accent);
+  }
+  .sx-h2 {
+    font-family: var(--brand-font-display);
+    font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+    font-weight: 700;
+    color: var(--brand-night);
+    margin: 0.3rem 0 1rem;
+  }
+  .sx-h2--dark {
+    color: var(--brand-surface);
+  }
+  .sx-h2--center {
+    text-align: center;
+  }
+  .sx-h3 {
+    font-family: var(--brand-font-display);
+    font-size: 1.1rem;
+    margin: 0.4rem 0 0.35rem;
+  }
+  .sx-body {
+    color: var(--brand-ink-muted);
+    line-height: 1.62;
+    margin: 0;
+  }
+  .sx-body--dark {
+    color: var(--brand-on-dark);
+  }
+  .sx-lede {
+    color: var(--brand-ink-muted);
+    max-width: 56ch;
+    margin: -0.5rem 0 1.5rem;
+  }
+  .sx-fn {
+    font-size: 0.62em;
+    margin-left: 0.15em;
+    opacity: 0.75;
+  }
+  .sx-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .sx-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 1.4rem;
+  }
+  .sx-actions--center {
+    justify-content: center;
+  }
+  .btn-outline {
+    border: 1px solid color-mix(in srgb, var(--brand-deep) 35%, transparent);
+    color: var(--brand-night);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--brand-radius-button);
+    display: inline-block;
+    background: var(--brand-surface);
+    font-weight: 600;
+  }
+  .sx-smallprint {
+    margin-top: 1.1rem;
+    font-size: 0.72rem;
+    color: var(--brand-ink-muted);
+    line-height: 1.5;
+  }
+  .sx-smallprint--center {
+    text-align: center;
+    color: var(--brand-on-dark-muted);
+  }
+  .sx-bullets {
+    margin: 1.3rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sx-bullets li {
+    position: relative;
+    padding: 0.5rem 0 0.5rem 1.8rem;
+  }
+  .sx-bullets li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--brand-accent-dark);
+    font-weight: 700;
+  }
+  .sx-bullets--dark li::before {
+    color: var(--brand-accent);
+  }
+  .sx-more {
+    margin-top: 1.4rem;
+    font-weight: 600;
+  }
+
+  /* ---------- announcement ---------- */
+  .sx-announce {
+    background: var(--brand-abyss);
+    color: var(--brand-on-dark);
+    font-size: 0.78rem;
+  }
+  .sx-announce-inner {
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1rem;
+    text-align: center;
+  }
+  .sx-announce-badge {
+    background: var(--brand-urgent);
+    color: var(--brand-on-dark-strong);
+    font-family: var(--brand-font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--brand-radius-pill);
+  }
+  .sx-announce a {
+    color: var(--brand-accent-soft);
+    font-weight: 600;
+  }
+
+  /* ---------- hero ---------- */
+  .sx-hero {
+    background: linear-gradient(180deg, var(--brand-night) 0%, var(--brand-abyss) 100%);
+    color: var(--brand-on-dark);
+    padding: 3.5rem 0;
+    position: relative;
+  }
+  .sx-hero--image::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--sx-hero-bg);
+    background-size: cover;
+    background-position: center;
+    opacity: 0.28;
+  }
+  .sx-hero-inner {
+    position: relative;
+    display: grid;
+    gap: 2rem;
+    align-items: start;
+  }
+  .sx-hero-sub {
+    margin: 1rem 0 0;
+    max-width: 48ch;
+    color: var(--brand-on-dark-muted);
+    font-size: 1.03rem;
+  }
+  .sx-promo {
+    display: inline-block;
+    margin: 1.1rem 0 0;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--brand-urgent) 60%, transparent);
+    border-radius: var(--brand-radius-pill);
+    background: color-mix(in srgb, var(--brand-urgent) 16%, transparent);
+    font-size: 0.85rem;
+  }
+  .sx-hero-call {
+    margin-top: 1.1rem;
+    font-size: 0.85rem;
+    color: var(--brand-on-dark-muted);
+  }
+  .sx-hero-call a {
+    color: var(--brand-accent-soft);
+    font-weight: 700;
+  }
+  .sx-hero-card {
+    background: var(--brand-surface);
+    color: var(--brand-ink);
+    border-radius: var(--brand-radius-card);
+    padding: 1.4rem 1.4rem 1.6rem;
+    box-shadow: 0 24px 60px rgb(var(--brand-abyss-rgb) / 0.35);
+  }
+  .sx-card-h {
+    font-family: var(--brand-font-display);
+    font-size: 1.2rem;
+    margin: 0 0 0.3rem;
+    color: var(--brand-night);
+  }
+  .sx-card-sub {
+    margin: 0 0 0.9rem;
+    font-size: 0.9rem;
+    color: var(--brand-ink-muted);
+  }
+  .sx-card-fn {
+    margin: 0.9rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--brand-ink-muted);
+  }
+
+  /* ---------- stats ---------- */
+  .sx-stats {
+    background: var(--brand-deep);
+    color: var(--brand-on-dark);
+    padding: 1.6rem 0;
+  }
+  .sx-stats-inner {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    text-align: center;
+  }
+  .sx-stat-value {
+    font-family: var(--brand-font-display);
+    font-size: clamp(1.6rem, 5vw, 2.1rem);
+    font-weight: 800;
+    color: var(--brand-accent);
+    margin: 0;
+  }
+  .sx-stat-label {
+    margin: 0.2rem 0 0;
+    font-family: var(--brand-font-mono);
+    font-size: 0.63rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brand-on-dark-muted);
+  }
+
+  /* ---------- offer card ---------- */
+  .sx-offer {
+    background: var(--brand-surface);
+    border-radius: var(--brand-radius-card);
+    padding: 2rem 1.6rem 2.2rem;
+    box-shadow: 0 18px 45px color-mix(in srgb, var(--brand-deep) 14%, transparent);
+    border-left: 5px solid var(--brand-accent);
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+
+  /* ---------- grids ---------- */
+  .sx-grid,
+  .sx-benefits,
+  .sx-imagecards,
+  .sx-reviews,
+  .sx-splits {
+    display: grid;
+    gap: 1.15rem;
+  }
+  .sx-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+  .sx-gallery img {
+    width: 100%;
+    height: auto;
+    border-radius: calc(var(--brand-radius-card) / 2);
+    object-fit: cover;
+  }
+
+  /* ---------- image cards ---------- */
+  .sx-imagecard {
+    position: relative;
+    display: block;
+    border-radius: var(--brand-radius-card);
+    overflow: hidden;
+    color: var(--brand-on-dark);
+    text-decoration: none;
+    background: var(--brand-night);
+    min-height: 190px;
+  }
+  .sx-imagecard img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+    opacity: 0.75;
+  }
+  .sx-imagecard-body {
+    position: relative;
+    padding: 1rem 1.1rem;
+    margin-top: 120px;
+    background: linear-gradient(180deg, transparent, rgb(var(--brand-abyss-rgb) / 0.75));
+  }
+  .sx-imagecard-body h3 {
+    font-family: var(--brand-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 0.3rem;
+    color: var(--brand-accent-soft);
+  }
+  .sx-imagecard-body p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  /* ---------- reviews ---------- */
+  .sx-review {
+    margin: 0;
+    background: var(--brand-surface);
+    border-radius: var(--brand-radius-card);
+    padding: 1.2rem 1.3rem;
+  }
+  .sx-stars {
+    margin: 0 0 0.5rem;
+    color: var(--brand-accent-deep);
+    letter-spacing: 0.1em;
+  }
+  .sx-review blockquote {
+    margin: 0;
+    line-height: 1.55;
+  }
+  .sx-detail {
+    margin: 0.55rem 0 0;
+    font-size: 0.86rem;
+    color: var(--brand-ink-muted);
+  }
+  .sx-review figcaption {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+  }
+  .sx-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    color: var(--brand-on-dark-strong);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex: 0 0 auto;
+  }
+  .sx-review-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .sx-review-meta {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--brand-ink-muted);
+  }
+  .sx-aggregate {
+    margin-top: 1.4rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  /* ---------- comparison ---------- */
+  .sx-compare-scroll {
+    overflow-x: auto;
+  }
+  .sx-compare {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 34rem;
+    border-radius: var(--brand-radius-card);
+    overflow: hidden;
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--brand-deep) 12%, transparent);
+  }
+  .sx-compare th,
+  .sx-compare td {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-deep) 10%, transparent);
+  }
+  .sx-compare thead th {
+    font-family: var(--brand-font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .sx-compare-us {
+    background: var(--brand-accent);
+    color: var(--brand-night);
+  }
+  .sx-compare-them {
+    background: var(--brand-primary);
+    color: var(--brand-on-dark-strong);
+  }
+  .sx-compare tbody th {
+    background: var(--brand-surface);
+    font-weight: 700;
+  }
+  .sx-compare-us-cell {
+    background: var(--brand-surface-alt);
+    color: var(--brand-night);
+  }
+  .sx-compare-them-cell {
+    background: var(--brand-surface);
+    color: var(--brand-ink-muted);
+  }
+
+  /* ---------- promise ---------- */
+  .sx-promise {
+    background: linear-gradient(180deg, var(--brand-night), var(--brand-primary-mid));
+    color: var(--brand-on-dark);
+    padding: 3rem 0;
+  }
+  .sx-promise-inner {
+    display: grid;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .sx-badge {
+    background: var(--brand-accent);
+    color: var(--brand-night);
+    width: 120px;
+    padding: 1rem 0.5rem 1.6rem;
+    text-align: center;
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
+  }
+  .sx-badge-value {
+    display: block;
+    font-family: var(--brand-font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+  .sx-badge-label {
+    display: block;
+    font-family: var(--brand-font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .sx-checks {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1.1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sx-checks li {
+    position: relative;
+    padding-left: 1.7rem;
+    font-size: 0.92rem;
+  }
+  .sx-checks li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--brand-accent);
+    font-weight: 700;
+  }
+
+  /* ---------- split cards ---------- */
+  .sx-split {
+    background: var(--brand-surface);
+    border: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+    border-radius: var(--brand-radius-card);
+    overflow: hidden;
+  }
+  .sx-split img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+  .sx-split-body {
+    padding: 1.15rem 1.25rem 1.4rem;
+  }
+  .sx-split-address {
+    font-style: normal;
+    margin-top: 0.9rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+  .sx-split-hours {
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    color: var(--brand-ink-muted);
+  }
+
+  /* ---------- steps ---------- */
+  .sx-steps {
+    display: grid;
+    gap: 1.1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: sx-step;
+  }
+  .sx-step {
+    border: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+    border-top: 3px solid var(--brand-accent);
+    border-radius: calc(var(--brand-radius-card) / 1.5);
+    padding: 1.1rem 1.2rem 1.3rem;
+  }
+  .sx-step-num {
+    font-family: var(--brand-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: color-mix(in srgb, var(--brand-accent-dark) 45%, transparent);
+  }
+  .sx-step-title {
+    font-family: var(--brand-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    margin: 0.3rem 0 0.4rem;
+  }
+
+  /* ---------- faq ---------- */
+  .sx-faq {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 46rem;
+  }
+  .sx-faq-item {
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+    padding: 0.9rem 0;
+  }
+  .sx-faq-item summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+  }
+  .sx-faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+  .sx-faq-item p {
+    margin-top: 0.6rem;
+  }
+
+  /* ---------- cta band ---------- */
+  .sx-ctaband {
+    background: linear-gradient(180deg, var(--brand-night), var(--brand-abyss));
+    color: var(--brand-on-dark);
+    padding: 3rem 0;
+    text-align: center;
+  }
+  .sx-ctaband--light {
+    background: var(--brand-surface-alt);
+    color: var(--brand-ink);
+  }
+  .sx-ctaband .sx-h2 {
+    color: var(--brand-surface);
+  }
+  .sx-ctaband--light .sx-h2 {
+    color: var(--brand-night);
+  }
+  .sx-ctaband-body {
+    margin: 0 auto;
+    max-width: 48ch;
+    color: var(--brand-on-dark-muted);
+  }
+  .sx-ctaband--light .sx-ctaband-body {
+    color: var(--brand-ink-muted);
+  }
+
+  /* ---------- trust ---------- */
+  .sx-trust {
+    padding: 1.4rem 0;
+    border-block: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+  }
+  .sx-trust-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.4rem;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--brand-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-ink-muted);
+  }
+  .sx-trust-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  /* ---------- big number ---------- */
+  .sx-bignumber {
+    text-align: center;
+    padding: 2.5rem 0;
+  }
+  .sx-bignumber-value {
+    font-family: var(--brand-font-display);
+    font-size: clamp(2.6rem, 11vw, 4rem);
+    font-weight: 800;
+    color: var(--brand-accent-dark);
+    margin: 0;
+    line-height: 1;
+  }
+  .sx-bignumber-label {
+    margin: 0.4rem 0 0;
+    color: var(--brand-ink-muted);
+  }
+
+  /* ---------- breakpoints ---------- */
+  @media (min-width: 700px) {
+    .sx-stats-inner {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .sx-benefits,
+    .sx-imagecards {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .sx-reviews {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    .sx-splits {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .sx-steps {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .sx-grid {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    .sx-gallery {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .sx-promise-inner {
+      grid-template-columns: auto 1fr;
+      gap: 2.5rem;
+    }
+  }
+  @media (min-width: 960px) {
+    .sx-hero-inner {
+      grid-template-columns: 1.25fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+  }
+</style>

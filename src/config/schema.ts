@@ -16,6 +16,11 @@
 
 import { z } from 'zod';
 import { CATEGORY_SLUGS } from './categories';
+import { sectionSchema, collectFootnotes } from './sections.schema';
+import { resolveBrandColors, THEME_NAMES, type BrandColors } from './themes';
+
+/** zod's enum wants a tuple literal; THEME_NAMES is the runtime list. */
+const THEME_NAMES_TUPLE = THEME_NAMES as [string, ...string[]] as ['aqua', 'luxury', 'natural', 'mono'];
 
 /* ------------------------------------------------------------------ */
 /* Primitives                                                          */
@@ -63,48 +68,61 @@ export const DAYS = [
 /* Brand — the whole visual identity, one place                        */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The 23 palette tokens — ALL OPTIONAL now. A theme derives every one of
+ * them from three bases (src/config/themes.ts); anything set here is an
+ * OVERRIDE that wins key-by-key. Overriding primary/accent/urgent
+ * re-derives the whole ramp around your colour; overriding a leaf token
+ * (accentDark, surfaceAlt, …) pins just that stop.
+ */
+const colorOverridesSchema = z.object({
+  // --- Primary ramp ---
+  primary: hexColor.optional(),
+  primaryMid: hexColor.optional(),
+  deep: hexColor.optional(),
+  night: hexColor.optional(),
+  abyss: hexColor.optional(), // hero base
+
+  // --- Accent ramp. The gradient stops are real tokens, not literals in a
+  // stylesheet, so a different accent still gets a correct button gradient. ---
+  accent: hexColor.optional(), // the CTA colour
+  accentSoft: hexColor.optional(), // headings on dark
+  accentDeep: hexColor.optional(),
+  accentDark: hexColor.optional(), // accent text on light (contrast-safe)
+  accentLift: hexColor.optional(), // top stop of the CTA gradient
+  accentPress: hexColor.optional(), // bottom stop of the CTA gradient
+  accentGlow: hexColor.optional(), // lightest stop, gradient accent text
+
+  // --- Urgency ramp ---
+  urgent: hexColor.optional(),
+  urgentLight: hexColor.optional(),
+  urgentDark: hexColor.optional(),
+
+  // --- Neutrals ---
+  surface: hexColor.optional(), // page background
+  surfaceAlt: hexColor.optional(), // alternating band background
+  ink: hexColor.optional(), // body text on light
+  inkMuted: hexColor.optional(), // secondary text on light
+  onDark: hexColor.optional(), // body text on dark
+  onDarkMuted: hexColor.optional(), // secondary text on dark
+  onDarkStrong: hexColor.optional(), // FULL-strength text/icons on dark (C-02)
+  inkLift: hexColor.optional(), // lifted ink — sold-pill top stop (C-03)
+
+  // NOTE: there is no `line` token. Hairline borders are DERIVED from
+  // `deep` at 12% alpha, because that is what they are — one colour at an
+  // opacity, not a second colour that could drift out of step with it.
+});
+
 const brandSchema = z.object({
   /**
-   * Colour ramp. These become CSS custom properties at build time.
-   * NO component may contain a hex code — it reads var(--brand-*) instead.
-   * Client B changes these nine values and gets a different-looking site.
+   * The theme picks the three base colours (primary, accent, urgent);
+   * every other token derives from them with contrast guaranteed
+   * (src/config/themes.ts). THE DEFAULT PATH: a new client sets `theme`
+   * and, at most, overrides the three bases — never 23 hex codes.
    */
-  colors: z.object({
-    // --- Primary ramp (Sun Pool: navy) ---
-    primary: hexColor, // --navy-royal
-    primaryMid: hexColor, // --navy-mid
-    deep: hexColor, // --navy-deep
-    night: hexColor, // --navy-night
-    abyss: hexColor, // --navy-abyss, hero base
-
-    // --- Accent ramp (Sun Pool: gold). The three gradient stops are real
-    // tokens, not literals in a stylesheet, so a client with a different
-    // accent still gets a correct button gradient from config alone. ---
-    accent: hexColor, // --gold, the CTA colour
-    accentSoft: hexColor, // --gold-soft, headings on dark
-    accentDeep: hexColor, // --gold-deep
-    accentDark: hexColor, // --gold-dark, accent text on light (contrast-safe)
-    accentLift: hexColor, // top stop of the CTA gradient
-    accentPress: hexColor, // bottom stop of the CTA gradient
-    accentGlow: hexColor, // lightest stop, gradient accent text
-
-    // --- Urgency ramp ---
-    urgent: hexColor,
-    urgentLight: hexColor, // top stop of the red gradient
-    urgentDark: hexColor, // bottom stop of the red gradient
-
-    // --- Neutrals ---
-    surface: hexColor, // page background
-    surfaceAlt: hexColor, // alternating band background (--sand)
-    ink: hexColor, // body text on light
-    inkMuted: hexColor, // secondary text on light (--ink-soft)
-    onDark: hexColor, // body text on dark
-    onDarkMuted: hexColor, // secondary text on dark
-
-    // NOTE: there is no `line` token. Hairline borders are DERIVED from
-    // `deep` at 12% alpha, because that is what they are — one colour at an
-    // opacity, not a second colour that could drift out of step with it.
-  }),
+  theme: z.enum(THEME_NAMES_TUPLE).default('aqua'),
+  /** Per-key overrides. Empty object = pure theme. */
+  colors: colorOverridesSchema.default({}),
 
   /** Font families. Loaded once in the base layout, referenced by token. */
   fonts: z.object({
@@ -133,7 +151,16 @@ const brandSchema = z.object({
     button: z.number().int().min(0).max(48),
     pill: z.number().int().min(0).max(999),
   }),
-});
+})
+  /**
+   * THE RESOLUTION STEP: theme + overrides → the complete 23-token palette.
+   * Downstream (BrandTokens, components, the gate manifest) always sees a
+   * full `colors` object — the compression is invisible past this line.
+   */
+  .transform((b) => ({
+    ...b,
+    colors: resolveBrandColors(b.theme, b.colors) as BrandColors,
+  }));
 
 /* ------------------------------------------------------------------ */
 /* Identity, contact, location                                         */
@@ -148,11 +175,12 @@ const identitySchema = z.object({
    * Founding year. TEMPLATE_DEFECTS: "1979" appeared in 17 files while the
    * logo said 1978. Here it exists once; `yearsInBusiness` is derived.
    */
-  foundedYear: z
-    .number()
-    .int()
-    .min(1800)
-    .max(new Date().getFullYear()),
+  // Static ceiling, NOT `new Date().getFullYear()`: this schema parses at
+  // module init, and Cloudflare Workers freeze the clock at 0 in global
+  // scope — under adapter v14 that made every config fail with
+  // "foundedYear > 1970". The real not-in-the-future check lives in the
+  // gate (Node, real clock).
+  foundedYear: z.number().int().min(1800).max(2100),
   /** One-sentence description. Used for meta description fallback + schema. */
   tagline: z.string().min(1),
   /** Production origin, no trailing slash. Drives canonical URLs + sitemap. */
@@ -285,6 +313,89 @@ const categoryOverrideSchema = z.object({
 });
 
 /* ------------------------------------------------------------------ */
+/* Financing — optional, and every word of it is a client fact         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Financing terms are client-specific AND regulated. A rate, a term length or
+ * an "approval" claim typed into a component would be both a duplicated fact
+ * and, if wrong, a Truth-in-Lending problem. So it lives here or nowhere.
+ *
+ * `null` means this client has no financing page. The route then 404s, and
+ * because the gate now crawls every nav link, a config that advertises
+ * /financing without configuring it FAILS THE GATE rather than shipping a
+ * dead nav item.
+ *
+ * `disclaimer` is required rather than optional on purpose: an offer stated
+ * without its qualifying terms is the claim regulators actually care about.
+ */
+const financingSchema = z.object({
+  headline: z.string().min(1),
+  blurb: z.string().min(1),
+  /** Plain statements. No invented rates — only what the client confirmed. */
+  bullets: z.array(z.string().min(1)).min(1),
+  /** Who actually underwrites it, if the client names them. */
+  lenderName: z.string().min(1).nullable().default(null),
+  /** External application link, if there is one. */
+  applyUrl: httpsUrl.nullable().default(null),
+  /** Qualifying terms. Required — see above. */
+  disclaimer: z.string().min(1),
+});
+
+/* ------------------------------------------------------------------ */
+/* Display — what a price is ALLOWED to say                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A price and a monthly payment are two different claims.
+ *
+ * "$8,995" is a fact about a unit. "$149/mo" is a CREDIT OFFER, and an offer
+ * stated without its terms is the thing regulators act on — which is why the
+ * financing block makes `disclaimer` required. A monthly figure sitting in
+ * the product row of a client with no financing block therefore advertises
+ * an offer that has no lender, no APR and no disclaimer behind it.
+ *
+ * These two switches decide it once, here, instead of at every place a price
+ * is rendered. `showMonthly` defaults to FALSE: the safe state is silence,
+ * and a client who has financing turns it on deliberately.
+ */
+const displaySchema = z.object({
+  /** Cash price. Off shows "Ask for current pricing" instead. */
+  showPrice: z.boolean().default(true),
+  /** Monthly payment. Requires a financing block — enforced below. */
+  showMonthly: z.boolean().default(false),
+});
+
+/* ------------------------------------------------------------------ */
+/* Homepage — an ordered list of sections, not a file full of markup    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The homepage lives HERE, in the one config file, for the same reason
+ * everything else does: a second config file is a second place to look, and
+ * the whole point of this template is that there is one.
+ *
+ * A section carries COPY. It must never carry a fact that already exists
+ * above it — the phone number, address, opening hours, founding year and
+ * category list are read at render time. That is why nothing here states a
+ * years-in-business number: `yearsInBusiness` is derived from `foundedYear`
+ * and is correct every January without anyone remembering.
+ *
+ * Sections: announcement, hero, stats, offercard, categories, products,
+ * imagecards, benefits, gallery, reviews, comparison, promise, splitcards,
+ * steps, faq, ctaband, cta, trust, bignumber.
+ */
+const homepageSchema = z.object({
+  /** Overrides <title>. Null falls back to identity.tagline. */
+  title: z.string().min(1).nullable().default(null),
+  /** Overrides the meta description. Null falls back to identity.tagline. */
+  description: z.string().min(1).nullable().default(null),
+  sections: z.array(sectionSchema).default([]),
+  /** Footnotes and small print printed at the bottom of the page. */
+  disclosures: z.array(z.string().min(1)).default([]),
+});
+
+/* ------------------------------------------------------------------ */
 /* Integrations — NAMES and FLAGS only. Never secrets.                 */
 /* ------------------------------------------------------------------ */
 
@@ -339,9 +450,70 @@ export const clientConfigSchema = z
     categories: z.partialRecord(z.enum([...CATEGORY_SLUGS]), categoryOverrideSchema).default({}),
     /** Cities / areas served. Footer pills + schema areaServed. */
     serviceAreas: z.array(z.string().min(1)).default([]),
+    /** null = this client has no financing page. The route 404s. */
+    financing: financingSchema.nullable().default(null),
+    /** What a price is allowed to say. See displaySchema. */
+    display: displaySchema.default({ showPrice: true, showMonthly: false }),
+    /**
+     * The homepage, as an ordered list of sections. An empty default means a
+     * config that predates this field still builds — it just has no homepage
+     * sections until someone adds them.
+     */
+    homepage: homepageSchema.default({
+      title: null,
+      description: null,
+      sections: [],
+      disclosures: [],
+    }),
     integrations: integrationsSchema,
   })
   .superRefine((cfg, ctx) => {
+    // Sentry is declared in config but NO SDK is wired in this template
+    // version (K-07/K-08). Turning it on would publish a false disclosure
+    // in the privacy policy — "we use error monitoring" — about monitoring
+    // that does not exist. Refused at build until AL-15 installs or
+    // deletes it.
+    if (cfg.integrations.sentry.enabled) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['integrations', 'sentry', 'enabled'],
+        message:
+          'Sentry is not wired in this template version — keep it false (the privacy policy ' +
+          'would publish a false disclosure). Install the SDK or delete the flag (AL-15).',
+      });
+    }
+
+    // Nav may not link to /financing when there is no financing block —
+    // the route 404s (O-17). Same fence as the disabled-category check
+    // below, for the same reason.
+    if (cfg.financing === null) {
+      for (const [i, item] of cfg.nav.items.entries()) {
+        if (item.type === 'link' && item.href === '/financing') {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['nav', 'items', i, 'href'],
+            message:
+              'Nav links to /financing but financing is null, so that page does not exist. ' +
+              'Fill in the financing block, or remove the nav link.',
+          });
+        }
+      }
+    }
+
+    // A monthly payment is a credit offer. Advertising one with no financing
+    // block means advertising terms that do not exist — so the BUILD stops,
+    // rather than the site shipping and the gate catching it later.
+    if (cfg.display.showMonthly && cfg.financing === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['display', 'showMonthly'],
+        message:
+          'display.showMonthly is true but financing is null. A monthly payment is a credit offer; ' +
+          'without a financing block it has no lender, no terms and no disclaimer. ' +
+          'Fill in financing, or set showMonthly to false.',
+      });
+    }
+
     // Nav may not link to a category route that is not enabled.
     // (This is what would have caught the saunas nav link.)
     const enabledSegments = new Set(
@@ -362,6 +534,44 @@ export const clientConfigSchema = z
           message: `Nav links to "${item.href}" but category "${catalogSlug}" is not enabled. Enable it or remove the link.`,
         });
       }
+    }
+
+    // The homepage must lead with a hero (an announcement bar may precede
+    // it). Anything else means the first thing a visitor sees is a mid-page
+    // block with no context above it.
+    const hp = cfg.homepage;
+    const first = hp.sections[0];
+    if (hp.sections.length > 0 && first && first.type !== 'hero' && first.type !== 'announcement') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['homepage', 'sections', 0],
+        message: 'The homepage must start with a hero (an announcement bar may come first).',
+      });
+    }
+    // One announcement bar, at the top, or none.
+    const bars = hp.sections.map((s, i) => (s.type === 'announcement' ? i : -1)).filter((i) => i >= 0);
+    if (bars.length > 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['homepage', 'sections'],
+        message: 'Only one announcement bar is allowed.',
+      });
+    }
+    if (bars.length === 1 && bars[0] !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['homepage', 'sections', bars[0]!],
+        message: 'The announcement bar must be the first section.',
+      });
+    }
+    // A superlative needs somewhere for its substantiation to print.
+    if (collectFootnotes(hp.sections).length > 0 && hp.disclosures.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['homepage', 'disclosures'],
+        message:
+          'The homepage makes a superlative claim but has no disclosures block to print the substantiation in.',
+      });
     }
 
     // A CLIENT config must sell something. The bare template legitimately

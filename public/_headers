@@ -1,10 +1,30 @@
+# Client-hint delegation: Meta's pixel reads high-entropy UA hints for
+# match quality (spec §4.1). ch-ua-full-version-list is the real token —
+# ch-ua-full-version was never a Permissions-Policy feature, so the old
+# line delegated nothing. Facebook origins ONLY, never (*): a wildcard
+# hands every embedded third party the visitor's exact device fingerprint.
+# The empty allowlists deny capabilities this site never uses.
 /*
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: ch-ua-model=(*), ch-ua-platform-version=(*), ch-ua-full-version=(*)
+  Permissions-Policy: ch-ua-full-version-list=("https://www.facebook.com" "https://connect.facebook.net"), ch-ua-model=("https://www.facebook.com" "https://connect.facebook.net"), ch-ua-platform-version=("https://www.facebook.com" "https://connect.facebook.net"), camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+# Logos are requested on every page view and their filenames are NOT
+# content-hashed — a day of caching, never `immutable` (L-18).
+/brand/*
+  Cache-Control: public, max-age=86400
 
 # Admin is URL + server-auth only. Never linked, never indexed.
 /admin/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store
+
+# Internal diagnostics (src/config/internal-routes.ts). No auth, so the
+# fence is structural: never indexed, never cached, never in the sitemap.
+/proof
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store
+/proof/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: private, no-store

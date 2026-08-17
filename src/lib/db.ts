@@ -311,76 +311,6 @@ export async function countProductsByCategory(
   return counts;
 }
 
-/* ------------------------------------------------------------------ */
-/* Category mirror                                                     */
-/* ------------------------------------------------------------------ */
-
-export interface CategorySyncReport {
-  inserted: string[];
-  updated: string[];
-  removed: string[];
-  /**
-   * Products sitting in a category that is no longer enabled. They are NOT
-   * deleted — a config toggle must never destroy a client's data. They are
-   * simply invisible, and reported here so the operator knows they exist.
-   */
-  orphanedProducts: { category: string; count: number }[];
-}
-
-/**
- * Rewrites the categories table from config.
- *
- * This is a one-way sync: config → database. Nothing is ever read back out
- * of this table to decide what the site sells. If you ever find yourself
- * writing `SELECT ... FROM categories WHERE enabled = 1`, stop — that
- * column does not exist, and adding it would recreate the split truth this
- * whole template is built to prevent.
- */
-export async function syncCategories(db: D1Database): Promise<CategorySyncReport> {
-  const now = Date.now();
-
-  const existing = await db
-    .prepare('SELECT slug FROM categories')
-    .all<{ slug: string }>();
-  const existingSlugs = new Set((existing.results ?? []).map((r) => r.slug));
-
-  const inserted: string[] = [];
-  const updated: string[] = [];
-
-  for (const cat of enabledCategories) {
-    await db
-      .prepare(
-        `INSERT INTO categories (slug, label, segment, sort_order, synced_at)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(slug) DO UPDATE SET
-           label = excluded.label,
-           segment = excluded.segment,
-           sort_order = excluded.sort_order,
-           synced_at = excluded.synced_at`,
-      )
-      .bind(cat.slug, cat.label, cat.segment, cat.sortOrder, now)
-      .run();
-
-    if (existingSlugs.has(cat.slug)) updated.push(cat.slug);
-    else inserted.push(cat.slug);
-  }
-
-  // Anything in the table that config no longer enables.
-  const stale = [...existingSlugs].filter((slug) => !isEnabledCategory(slug));
-  const orphanedProducts: { category: string; count: number }[] = [];
-
-  for (const slug of stale) {
-    const row = await db
-      .prepare("SELECT COUNT(*) AS n FROM products WHERE category = ? AND status != 'deleted'")
-      .bind(slug)
-      .first<{ n: number }>();
-    const count = row?.n ?? 0;
-    if (count > 0) orphanedProducts.push({ category: slug, count });
-    await db.prepare('DELETE FROM categories WHERE slug = ?').bind(slug).run();
-  }
-
-  return { inserted, updated, removed: stale, orphanedProducts };
-}
 
 /* ------------------------------------------------------------------ */
 /* Diagnostics                                                         */
@@ -390,21 +320,38 @@ export interface InventoryStatus {
   configured: boolean;
   bindingName: string;
   enabledCategories: string[];
-  message: string;
+  /**
+   * For the OPERATOR'S CONSOLE and internal pages only — wrangler commands,
+   * binding names, config paths. Rendering this to a customer page is a gate
+   * failure ('No operator diagnostics in customer pages').
+   */
+  operatorDetail: string;
+  /**
+   * The only string a customer may see. Built from config, zero internals,
+   * and it gives them the one thing that actually helps: a way to reach a
+   * human (RC-A — one string was serving two audiences).
+   */
+  customerMessage: string;
 }
 
 /** Used by pages and API routes to explain themselves when D1 is absent. */
 export function inventoryStatus(db: D1Database | null): InventoryStatus {
   const bindingName = site.integrations.d1BindingName;
+  // No phone DIGITS in the string: every rendered phone must be a tel: link
+  // (the gate enforces it), so pages pair this message with their own
+  // tel-href action and the quiz appends its own Call link to API errors.
+  const customerMessage =
+    "Live inventory is temporarily unavailable — give us a call and we'll tell you what's on the floor.";
   if (!db) {
     return {
       configured: false,
       bindingName,
       enabledCategories: [...enabledCategorySlugs],
-      message:
+      operatorDetail:
         `No D1 database is bound as "${bindingName}". Create one with ` +
         '`wrangler d1 create <name>`, uncomment the [[d1_databases]] block in ' +
-        'wrangler.toml, then run `npm run db:apply:local`.',
+        'wrangler.toml, then run `npm run db:migrate:local`.',
+      customerMessage,
     };
   }
   if (enabledCategorySlugs.length === 0) {
@@ -412,15 +359,17 @@ export function inventoryStatus(db: D1Database | null): InventoryStatus {
       configured: true,
       bindingName,
       enabledCategories: [],
-      message:
+      operatorDetail:
         'Database is bound, but no categories are enabled in client.config.ts, ' +
         'so there is nothing to sell and every product query returns empty.',
+      customerMessage,
     };
   }
   return {
     configured: true,
     bindingName,
     enabledCategories: [...enabledCategorySlugs],
-    message: 'Inventory is configured.',
+    operatorDetail: 'Inventory is configured.',
+    customerMessage,
   };
 }

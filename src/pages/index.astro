@@ -1,277 +1,94 @@
 ---
 /**
- * PHASE 1 PROOF SHEET.
+ * HOMEPAGE.
  *
- * This is NOT the homepage. It is a temporary page whose only job is to let
- * the operator SEE that every fact on screen came from client.config.ts and
- * nowhere else — including the values that are derived rather than typed.
+ * Almost nothing here. The page is an ordered list of sections in
+ * src/config/homepage.config.ts, rendered by the shared section renderer —
+ * the same one every paid landing page uses.
  *
- * The real homepage replaces this in a later phase. Until then, this page is
- * the eyeball pass: if something here is wrong, the config is wrong, and
- * there is exactly one file to fix.
+ * That is the point: client #2's homepage is a different arrangement of the
+ * same blocks, not a rebuilt page. And because no section may hold a fact
+ * that already lives in client.config.ts, the phone number, address, hours,
+ * years-in-business and product list are read at render time and cannot go
+ * stale in a copy.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { site, derived } from '../config';
-import { CATEGORY_CATALOG } from '../config/categories';
-import { getDb, listProducts, countProductsByCategory, inventoryStatus, PUBLIC_STATUSES } from '../lib/db';
+import Render from '../components/sections/Render.astro';
+import { site } from '../config';
+import { collectFootnotes } from '../config/sections.schema';
 
-const swatches = Object.entries(site.brand.colors);
+// The homepage is part of the ONE config file. There is no second place.
+const homepage = site.homepage;
 
-// PHASE 3 — read the real database, if one is bound.
-const db = getDb();
-const dbStatus = inventoryStatus(db);
-const products = db ? await listProducts(db) : [];
-const counts = db ? await countProductsByCategory(db) : {};
+const footnotes = collectFootnotes(homepage.sections);
+
+/**
+ * Structured data. AggregateRating comes from the SAME reviews section that
+ * renders the visible "rated X across N" line, so the number a customer reads
+ * and the number Google reads cannot disagree.
+ */
+const reviews = homepage.sections.find((s) => s.type === 'reviews');
+const aggregate = reviews && reviews.type === 'reviews' ? reviews.aggregate : null;
+
+const jsonLd: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: site.identity.name,
+  url: site.identity.siteUrl,
+  ...(aggregate
+    ? {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: aggregate.rating,
+          reviewCount: aggregate.count,
+        },
+      }
+    : {}),
+};
 ---
 
-<BaseLayout title="Config Proof Sheet" noindex>
-  <div class="wrap" style="padding-top:48px;padding-bottom:64px;max-width:900px">
-    <p class="eyebrow text-brand-accent-dark">Phase 1 — scaffold &amp; config</p>
-    <h1 class="mt-2 text-4xl">Every value below came from one file.</h1>
-    <p class="mt-3 text-brand-ink-muted">
-      Nothing on this page is typed into a component. Change
-      <code class="rounded bg-brand-surface-alt px-1.5 py-0.5">src/config/client.config.ts</code>
-      and everything here follows.
-    </p>
+<BaseLayout
+  title={homepage.title ?? site.identity.tagline}
+  description={homepage.description ?? site.identity.tagline}
+  path="/"
+  jsonLd={jsonLd}
+>
+  <Render sections={homepage.sections} sourcePage="/" />
 
-    <!-- IDENTITY -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Identity</h2>
-      <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
-        <dt class="font-semibold">Name</dt><dd>{site.identity.name}</dd>
-        <dt class="font-semibold">Short name</dt><dd>{site.identity.shortName}</dd>
-        <dt class="font-semibold">Founded</dt><dd>{site.identity.foundedYear}</dd>
-        <dt class="font-semibold text-brand-accent-dark">Years in business</dt>
-        <dd>{derived.yearsInBusiness} <span class="text-brand-ink-muted">(derived — never typed)</span></dd>
-        <dt class="font-semibold">Site URL</dt><dd>{site.identity.siteUrl}</dd>
-      </dl>
-    </section>
-
-    <!-- CONTACT: proves one phone number, two derived forms -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Contact</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        One canonical number in config. The display string and the
-        <code>tel:</code> link are both derived from it, so they cannot disagree —
-        and a phone can never render as plain, untappable text.
-      </p>
-      <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
-        <dt class="font-semibold">Stored (E.164)</dt><dd><code>{site.contact.phone}</code></dd>
-        <dt class="font-semibold text-brand-accent-dark">Display (derived)</dt>
-        <dd><a href={derived.telHref} class="underline">{derived.phoneDisplay}</a></dd>
-        <dt class="font-semibold text-brand-accent-dark">tel: href (derived)</dt>
-        <dd><code>{derived.telHref}</code></dd>
-        <dt class="font-semibold">Email</dt>
-        <dd>{site.contact.email ?? <span class="text-brand-ink-muted">not published</span>}</dd>
-      </dl>
-    </section>
-
-    <!-- LOCATION: proves map + directions are derived, never blank -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Location</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        The map embed and directions links are computed from the address. There is no
-        <code>mapEmbedUrl</code> field to leave blank.
-      </p>
-      <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
-        <dt class="font-semibold">Address</dt><dd>{derived.addressOneLine}</dd>
-        <dt class="font-semibold">Geo</dt>
-        <dd>{site.address.latitude}, {site.address.longitude}</dd>
-        <dt class="font-semibold text-brand-accent-dark">Directions (derived)</dt>
-        <dd class="break-all text-xs"><code>{derived.directionsUrl}</code></dd>
-        <dt class="font-semibold text-brand-accent-dark">Map embed (derived)</dt>
-        <dd class="break-all text-xs"><code>{derived.mapEmbedUrl}</code></dd>
-      </dl>
-    </section>
-
-    <!-- HOURS -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Hours</h2>
-      <ul class="mt-4 space-y-1">
-        {derived.hoursDisplay.map((h) => <li>{h.label}</li>)}
-      </ul>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        Same source feeds schema.org <code>openingHoursSpecification</code> in Phase 7.
-      </p>
-    </section>
-
-    <!-- CATEGORIES: the saunas guardrail, visible -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Categories</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        The template supports {CATEGORY_CATALOG.length}. This client has {derived.enabledCategories.length} on.
-        A category that is off has no route, no nav link, no sitemap entry, no admin option.
-      </p>
-      <ul class="mt-4 space-y-2">
-        {
-          CATEGORY_CATALOG.map((cat) => {
-            const on = derived.enabledCategorySlugs.includes(cat.slug);
-            return (
-              <li class="flex items-center gap-3">
-                <span
-                  class:list={[
-                    'rounded-pill px-2.5 py-0.5 text-xs font-bold',
-                    on ? 'bg-brand-accent text-brand-night' : 'bg-brand-line text-brand-ink-muted',
-                  ]}
-                >
-                  {on ? 'ON' : 'OFF'}
-                </span>
-                <span class="font-semibold">{cat.label}</span>
-                <code class="text-xs text-brand-ink-muted">/{cat.segment}</code>
-              </li>
-            );
-          })
-        }
-      </ul>
-    </section>
-
-    <!-- NAV: one list, two surfaces -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Navigation</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        One list in config. Header and footer both render from it, so a label cannot drift
-        and a destination cannot disagree with itself.
-      </p>
-      <div class="mt-4 grid gap-6 sm:grid-cols-2">
-        <div>
-          <h3 class="eyebrow text-brand-accent-dark">Header</h3>
-          <ul class="mt-2 space-y-1">
-            {derived.headerNav.map((n) => <li>{n.label} <code class="text-xs text-brand-ink-muted">{n.href}</code></li>)}
-          </ul>
-        </div>
-        <div>
-          <h3 class="eyebrow text-brand-accent-dark">Footer</h3>
-          <ul class="mt-2 space-y-1">
-            {derived.footerNav.map((n) => <li>{n.label} <code class="text-xs text-brand-ink-muted">{n.href}</code></li>)}
-          </ul>
-        </div>
-      </div>
-      <p class="mt-4">
-        Primary CTA: <strong>{site.nav.primaryCta.label}</strong> →
-        <code>{site.nav.primaryCta.href}</code>
-      </p>
-    </section>
-
-    <!-- SOCIAL -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Social</h2>
-      {
-        derived.socialLinks.length === 0 ? (
-          <p class="mt-2 text-brand-ink-muted">None set. Footer icons and JSON-LD sameAs will both be empty — from the same source.</p>
-        ) : (
-          <ul class="mt-2 space-y-1">
-            {derived.socialLinks.map((s) => <li>{s.label}: <code class="text-xs">{s.url}</code></li>)}
-          </ul>
-        )
-      }
-    </section>
-
-    <!-- BRAND -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Brand</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        These swatches are rendered from CSS custom properties written by
-        <code>&lt;BrandTokens /&gt;</code>. No stylesheet and no component contains a hex code.
-      </p>
-      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {
-          swatches.map(([name, hex]) => (
-            <div class="rounded-card border border-brand-line p-3">
-              <div class="h-10 w-full rounded" style={`background:${hex}`}></div>
-              <p class="mt-2 text-xs font-semibold">{name}</p>
-              <p class="text-xs text-brand-ink-muted"><code>{hex}</code></p>
-            </div>
-          ))
-        }
-      </div>
-      <div class="mt-6 space-y-1 text-sm">
-        <p><span class="font-semibold">Display font:</span> <span class="font-display">{site.brand.fonts.display}</span></p>
-        <p><span class="font-semibold">Body font:</span> {site.brand.fonts.body}</p>
-        <p><span class="font-semibold">Mono font:</span> <span class="font-mono">{site.brand.fonts.mono}</span></p>
-      </div>
-    </section>
-
-
-    <!-- PHASE 2: ported button system -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Buttons (exact port)</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        Same gradient stops, shadows and 0.65s shimmer sweep as the live site — but every
-        value reads a config token, so a different accent colour produces a correct
-        gradient with no CSS edit.
-      </p>
-      <div class="mt-4 flex flex-wrap items-center gap-3">
-        <button class="btn btn-gold" type="button">Shop Inventory</button>
-        <button class="btn btn-navy" type="button">Apply For Financing</button>
-        <button class="btn btn-ghost-blue" type="button">Request Pricing</button>
-        <button class="btn btn-red" type="button">Limited Offer</button>
-        <button class="btn btn-gold btn-sm" type="button">Small</button>
-      </div>
-      <div class="mt-6 rounded-card p-6" style="background:linear-gradient(180deg,var(--brand-night),var(--brand-abyss))">
-        <p class="eyebrow" style="color:var(--brand-accent-soft)">On dark</p>
-        <div class="flex flex-wrap items-center gap-3">
-          <button class="btn btn-gold" type="button">Get today&apos;s local price</button>
-          <button class="btn btn-ghost" type="button">Get directions</button>
-        </div>
-        <p class="mt-4 text-2xl" style="color:#fff">
-          The Best Hot Tub &amp; Swim Spa Store <span class="deg">in San Diego County</span>
-        </p>
-      </div>
-      <div class="gold-hairline mt-6"></div>
-    </section>
-
-
-    <!-- PHASE 3: D1 inventory -->
-    <section class="mt-10">
-      <h2 class="text-2xl">Inventory (D1)</h2>
-      <p class="mt-2 text-sm text-brand-ink-muted">
-        Public queries filter against the same enabled-categories array the nav renders from.
-        A product in a disabled category stays in the database and never reaches a customer.
-      </p>
-
-      <dl class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-[200px_1fr]">
-        <dt class="font-semibold">Binding</dt>
-        <dd><code>{dbStatus.bindingName}</code> — {dbStatus.configured ? 'bound' : 'not bound'}</dd>
-        <dt class="font-semibold">Visible statuses</dt>
-        <dd><code>{PUBLIC_STATUSES.join(', ')}</code> <span class="text-brand-ink-muted">(allow-list)</span></dd>
-        <dt class="font-semibold text-brand-accent-dark">Categories queried</dt>
-        <dd>
-          {derived.enabledCategorySlugs.length > 0
-            ? derived.enabledCategorySlugs.join(', ')
-            : 'none — every product query returns empty'}
-        </dd>
-      </dl>
-
-      {
-        !dbStatus.configured ? (
-          <p class="mt-4 rounded-card border border-brand-line p-4 text-sm text-brand-ink-muted">
-            {dbStatus.message}
-          </p>
-        ) : (
-          <>
-            <p class="mt-4 text-sm">
-              <strong>{products.length}</strong> product{products.length === 1 ? '' : 's'} visible to customers.
-            </p>
-            {products.length > 0 && (
-              <ul class="mt-3 space-y-1 text-sm">
-                {products.map((p) => (
-                  <li>
-                    <code class="text-xs text-brand-ink-muted">{p.category}</code> {p.inventoryName}
-                    <span class="text-brand-ink-muted"> — {p.status}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p class="mt-3 text-sm text-brand-ink-muted">
-              Per category: {Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}
-            </p>
-          </>
-        )
-      }
-    </section>
-
-    <p class="mt-12 border-t border-brand-line pt-6 text-sm text-brand-ink-muted">
-      {derived.copyrightLine}
-    </p>
-  </div>
+  {
+    (footnotes.length > 0 || homepage.disclosures.length > 0) && (
+      <section class="hp-disclosures wrap">
+        {footnotes.length > 0 && (
+          <ol class="hp-footnotes">
+            {footnotes.map((f) => (
+              <li>{f}</li>
+            ))}
+          </ol>
+        )}
+        {homepage.disclosures.map((d) => (
+          <p class="hp-disclosure">{d}</p>
+        ))}
+      </section>
+    )
+  }
 </BaseLayout>
+
+<style>
+  .hp-disclosures {
+    padding: 1.5rem 0 2.5rem;
+    max-width: 46rem;
+  }
+  .hp-footnotes {
+    margin: 0 0 0.75rem;
+    padding-left: 1.1rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--brand-ink-muted);
+  }
+  .hp-disclosure {
+    margin: 0.4rem 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--brand-ink-muted);
+  }
+</style>

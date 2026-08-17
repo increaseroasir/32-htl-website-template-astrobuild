@@ -47,6 +47,8 @@ export function getEnv(): Partial<Env> {
   return env as unknown as Partial<Env>;
 }
 
+export { secretsMatch } from './secrets';
+
 /** Hex SHA-256. Same helper, same output as the original `sha256()`. */
 export async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));

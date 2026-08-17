@@ -17,19 +17,34 @@
  */
 import type { Product } from '../lib/db';
 import { assetOrWarn } from '../lib/assets';
-import { formatPrice, formatMonthly, statusLabel, isMutedStatus, ASK_FOR_PRICE } from '../lib/format';
+import { site } from '../config';
+import { pricingFor, statusLabel, isMutedStatus, ASK_FOR_PRICE } from '../lib/format';
 
 interface Props {
   product: Product;
-  /** Financing destination. Falls back to the config nav entry. */
+  /** Override the financing destination. Rarely needed. */
   financingHref?: string;
+  /**
+   * Position in the parent's list (C16 / E-05). The first two cards are
+   * above the fold on every listing layout, so they load eagerly; the
+   * rest stay lazy. Omitted = lazy, the safe default.
+   */
+  index?: number;
 }
 
-const { product, financingHref = '/financing' } = Astro.props;
+/**
+ * The financing link used to default to '/financing' unconditionally, which
+ * meant every card on every listing page linked to a page that only exists
+ * when the client has configured financing. One config value now decides both
+ * whether the page exists and whether anything links to it — there is no way
+ * for the two to disagree.
+ */
+const { product, financingHref, index } = Astro.props;
+const eager = typeof index === 'number' && index < 2;
+const financingLink = financingHref ?? (site.financing ? '/financing' : null);
 
 const image = assetOrWarn(product.primaryImage, `product "${product.slug}"`);
-const price = formatPrice(product.price);
-const monthly = formatMonthly(product.monthlyPayment);
+const { cash, monthly, askForPrice } = pricingFor(product);
 const badge = product.promoLabel || statusLabel(product.status, product.quantity);
 const muted = isMutedStatus(product.status);
 const href = `${product.categoryHref}/${product.slug}`;
@@ -48,7 +63,18 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
 
 <article class:list={['inv-card', muted && 'is-muted']}>
   <a class="inv-card-img" href={href} aria-label={product.inventoryName}>
-    {image && <img src={image} alt={product.inventoryName} loading="lazy" decoding="async" />}
+    {/* 800×600 = the card's 4:3 crop box; CSS object-fit covers, so a
+        different intrinsic ratio crops rather than distorts (E-01). */}
+    {image && (
+      <img
+        src={image}
+        alt={product.inventoryName}
+        width="800"
+        height="600"
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+      />
+    )}
     {
       badge && (
         <span class:list={['product-tag', muted && 'product-tag-dark']}>{badge}</span>
@@ -75,22 +101,29 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
         )
       }
 
-      <div class="inv-price-box">
-        <div class="inv-price-left">
-          <p class:list={['inv-card-price', !price && 'inv-card-price--ask']}>
-            {price ?? ASK_FOR_PRICE}
-          </p>
-          {product.deliveryPromise && <p class="inv-card-delivery">{product.deliveryPromise}</p>}
-        </div>
-        {
-          monthly && (
-            <div>
-              <p class="inv-financing-label">As low as</p>
-              <p class="inv-card-monthly">{monthly}</p>
+      {
+        /* Sold and pending units print no price box at all. The tag on the
+           image already says what happened to them, and a price on something
+           that cannot be bought is an offer that is not real. */
+        (cash || askForPrice || monthly) && (
+          <div class="inv-price-box">
+            <div class="inv-price-left">
+              <p class:list={['inv-card-price', askForPrice && 'inv-card-price--ask']}>
+                {cash ?? ASK_FOR_PRICE}
+              </p>
+              {product.deliveryPromise && (
+                <p class="inv-card-delivery">{product.deliveryPromise}</p>
+              )}
             </div>
-          )
-        }
-      </div>
+            {monthly && (
+              <div>
+                <p class="inv-financing-label">As low as</p>
+                <p class="inv-card-monthly">{monthly}</p>
+              </div>
+            )}
+          </div>
+        )
+      }
     </div>
 
     <div class="inv-card-actions">
@@ -98,7 +131,13 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
         {muted ? 'View details' : 'See this unit'}
         <span class="inv-card-cta-arrow" aria-hidden="true">&#8594;</span>
       </a>
-      {!muted && <a class="inv-card-financing" href={financingHref}>Apply For Financing</a>}
+      {
+        !muted && financingLink && (
+          <a class="inv-card-financing" href={financingLink}>
+            Apply For Financing
+          </a>
+        )
+      }
     </div>
   </div>
 </article>
@@ -164,9 +203,9 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
     box-shadow: 0 8px 18px -8px rgb(var(--brand-accent-deep-rgb) / 0.7);
   }
   .product-tag-dark {
-    background: linear-gradient(180deg, #2a3244, var(--brand-ink));
-    color: #fff;
-    box-shadow: 0 8px 18px -8px rgb(0 0 0 / 0.5);
+    background: linear-gradient(180deg, var(--brand-ink-lift), var(--brand-ink));
+    color: var(--brand-on-dark-strong);
+    box-shadow: 0 8px 18px -8px rgb(var(--brand-abyss-rgb) / 0.5);
   }
 
   .inv-card-body {
@@ -265,7 +304,7 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
     font-size: 32px;
     line-height: 1;
     font-weight: 800;
-    background: linear-gradient(180deg, #d9a50e 8%, #b98200 70%);
+    background: linear-gradient(180deg, var(--brand-accent-deep) 8%, var(--brand-accent-dark) 70%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -304,10 +343,10 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
     font-weight: 800;
     font-size: 0.88rem;
     letter-spacing: 0.01em;
-    color: #fff;
+    color: var(--brand-on-dark-strong);
     background: linear-gradient(180deg, var(--brand-primary), var(--brand-deep));
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / 0.18),
       0 12px 26px -12px rgb(var(--brand-night-rgb) / 0.55);
     transition:
       transform 0.25s ease,
@@ -315,7 +354,7 @@ const pills = product.quickFacts.length > 0 ? product.quickFacts.slice(0, 3) : f
   }
   .inv-card-financing:hover {
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 1px 0 rgb(var(--brand-on-dark-strong-rgb) / 0.22),
       0 16px 34px -12px rgb(var(--brand-night-rgb) / 0.7);
     transform: translateY(-1px);
   }

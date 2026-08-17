@@ -17,7 +17,7 @@ import { findCategoryBySegment } from '../../config/categories';
 import { enabledCategories, isCategoryEnabled, site, derived } from '../../config';
 import { getDb, getProductBySlug, listProducts, inventoryStatus } from '../../lib/db';
 import { assetOrWarn } from '../../lib/assets';
-import { formatPrice, formatMonthly, statusLabel, isMutedStatus, ASK_FOR_PRICE } from '../../lib/format';
+import { pricingFor, statusLabel, isMutedStatus, ASK_FOR_PRICE } from '../../lib/format';
 import { buildProduct } from '../../lib/seo';
 
 const { category: segment = '', slug = '' } = Astro.params;
@@ -28,6 +28,7 @@ const resolved = enabled ? enabledCategories.find((c) => c.slug === definition?.
 
 const db = resolved ? getDb() : null;
 const dbStatus = inventoryStatus(db);
+if (resolved && !dbStatus.configured) console.error('[pdp]', dbStatus.operatorDetail);
 const product = db && resolved ? await getProductBySlug(db, slug) : null;
 
 // The product must live in the category the URL claims, or /hot-tubs/x and
@@ -52,8 +53,9 @@ const gallery = product
       .map((g) => assetOrWarn(g, `gallery of "${product.slug}"`))
       .filter((g): g is string => g !== null)
   : [];
-const price = product ? formatPrice(product.price) : null;
-const monthly = product ? formatMonthly(product.monthlyPayment) : null;
+const { cash, monthly, askForPrice } = product
+  ? pricingFor(product)
+  : { cash: null, monthly: null, askForPrice: false };
 const badge = product ? product.promoLabel || statusLabel(product.status, product.quantity) : null;
 const muted = product ? isMutedStatus(product.status) : false;
 
@@ -71,7 +73,7 @@ const productSchema =
         <p>
           {dbStatus.configured
             ? 'It may have sold, or the link may be out of date.'
-            : dbStatus.message}
+            : dbStatus.customerMessage}
         </p>
         <p class="nf-actions">
           <a class="btn btn-gold" href={site.nav.primaryCta.href}>
@@ -103,13 +105,14 @@ const productSchema =
       <article class="pdp wrap">
         <div class="pdp-media">
           <div class:list={['pdp-hero-img', muted && 'is-muted']}>
-            {image && <img src={image} alt={product!.inventoryName} fetchpriority="high" decoding="async" />}
+            {/* 1200×900 = the hero's 4:3 crop box (object-fit: cover). */}
+            {image && <img src={image} alt={product!.inventoryName} width="1200" height="900" fetchpriority="high" decoding="async" />}
             {badge && <span class:list={['product-tag', muted && 'product-tag-dark']}>{badge}</span>}
           </div>
           {gallery.length > 0 && (
             <div class="pdp-gallery">
               {gallery.map((g, i) => (
-                <img src={g} alt={`${product!.inventoryName} — view ${i + 2}`} loading="lazy" decoding="async" />
+                <img src={g} alt={`${product!.inventoryName} — view ${i + 2}`} width="600" height="600" loading="lazy" decoding="async" />
               ))}
             </div>
           )}
@@ -121,26 +124,37 @@ const productSchema =
           {product!.headline && <p class="pdp-model">{product!.inventoryName}</p>}
           {product!.heroDescription && <p class="pdp-lede">{product!.heroDescription}</p>}
 
-          <div class="pdp-price">
-            <div>
-              <p class:list={['pdp-cash', !price && 'pdp-cash--ask']}>{price ?? ASK_FOR_PRICE}</p>
-              {product!.deliveryPromise && <p class="pdp-delivery">{product!.deliveryPromise}</p>}
-            </div>
-            {monthly && (
-              <div class="pdp-monthly-block">
-                <p class="pdp-monthly-label">As low as</p>
-                <p class="pdp-monthly">{monthly}</p>
+          {/* Sold and pending units quote nothing — no cash price, no
+              monthly payment, not even an invitation to ask. There is
+              nothing left to sell on this page. */}
+          {(cash || askForPrice || monthly) && (
+            <div class="pdp-price">
+              <div>
+                <p class:list={['pdp-cash', askForPrice && 'pdp-cash--ask']}>
+                  {cash ?? ASK_FOR_PRICE}
+                </p>
+                {product!.deliveryPromise && (
+                  <p class="pdp-delivery">{product!.deliveryPromise}</p>
+                )}
               </div>
-            )}
-          </div>
+              {monthly && (
+                <div class="pdp-monthly-block">
+                  <p class="pdp-monthly-label">As low as</p>
+                  <p class="pdp-monthly">{monthly}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div class="pdp-actions">
             <a class="btn btn-gold btn-block" href={derived.telHref}>
               Call {derived.phoneDisplay}
             </a>
-            <a class="btn btn-navy btn-block" href="/financing">
-              Apply For Financing
-            </a>
+            {site.financing && (
+              <a class="btn btn-navy btn-block" href="/financing">
+                Apply For Financing
+              </a>
+            )}
           </div>
 
           {product!.quickFacts.length > 0 && (
@@ -258,8 +272,8 @@ const productSchema =
     box-shadow: 0 8px 18px -8px rgb(var(--brand-accent-deep-rgb) / 0.7);
   }
   .product-tag-dark {
-    background: linear-gradient(180deg, #2a3244, var(--brand-ink));
-    color: #fff;
+    background: linear-gradient(180deg, var(--brand-ink-lift), var(--brand-ink));
+    color: var(--brand-on-dark-strong);
   }
 
   .pdp-gallery {
@@ -341,7 +355,7 @@ const productSchema =
     font-size: 36px;
     line-height: 1;
     font-weight: 800;
-    background: linear-gradient(180deg, #d9a50e 8%, #b98200 70%);
+    background: linear-gradient(180deg, var(--brand-accent-deep) 8%, var(--brand-accent-dark) 70%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

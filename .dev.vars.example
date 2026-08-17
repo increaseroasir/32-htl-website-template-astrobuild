@@ -1,0 +1,30 @@
+# Local development secrets for `astro dev` / `wrangler dev`.
+# Copy to `.dev.vars` (gitignored) and fill in. NEVER commit the real file.
+#
+# In production these are set with `wrangler secret put NAME` — not here.
+
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
+
+# R2 public host, once the bucket has public access enabled.
+R2_PUBLIC_BUCKET_ID=
+# R2_PUBLIC_BASE_URL=https://images.example.com
+
+# Phase 8
+# GHL_API_KEY=
+# GHL_LOCATION_ID=
+# META_PIXEL_ID=
+# META_CAPI_ACCESS_TOKEN=
+
+# Conversion value ladder. Optional — these are the built-in defaults.
+# Lead is IMMOVABLY 0: a form fill is worth nothing until a human
+# qualifies it, and all the optimisation signal lives downstream.
+# There is deliberately no META_VALUE_LEAD override.
+# Purchase has NO default and refuses to fire without a real number.
+# META_VALUE_QUALIFIED=75
+# META_VALUE_SCHEDULE=300
+# META_VALUE_SHOWED=600
+
+# Bearer token the CRM presents to POST /api/lead-stage.
+# Generate with: openssl rand -hex 32
+# STAGE_WEBHOOK_SECRET=

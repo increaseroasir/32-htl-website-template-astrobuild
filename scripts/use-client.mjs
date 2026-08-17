@@ -61,4 +61,31 @@ writeFileSync(target, contents, 'utf8');
 
 console.log(`\nActive client config is now: ${name}`);
 console.log('  src/config/client.config.ts  ← clients/' + name + '.config.ts');
-console.log('\nRun `npm run build` — the config is validated as the build starts.\n');
+
+/**
+ * The homepage is a SECOND config file — a list of sections rather than a set
+ * of facts. It is optional: a client without one gets the template's
+ * placeholder homepage, which is honest rather than broken.
+ *
+ * It is separate from client.config.ts because it holds page CONTENT, not
+ * facts. No fact appears in both — sections read the phone, address, hours
+ * and category list from client.config at render time.
+ */
+const homepageSource = join(clientsDir, `${name}.homepage.ts`);
+const homepageTarget = join(root, 'src', 'config', 'homepage.config.ts');
+
+if (existsSync(homepageSource)) {
+  if (existsSync(homepageTarget)) {
+    copyFileSync(homepageTarget, join(clientsDir, '_previous.homepage.ts.bak'));
+  }
+  const hp = readFileSync(homepageSource, 'utf8').replace(
+    /from ['"]\.\.\/src\/config\/homepage\.schema['"]/g,
+    "from './homepage.schema'",
+  );
+  writeFileSync(homepageTarget, hp, 'utf8');
+  console.log('  src/config/homepage.config.ts ← clients/' + name + '.homepage.ts');
+} else {
+  console.log(`  (no clients/${name}.homepage.ts — keeping the current homepage config)`);
+}
+
+console.log('\nRun `npm run build` — both configs are validated as the build starts.\n');

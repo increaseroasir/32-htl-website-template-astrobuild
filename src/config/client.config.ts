@@ -76,15 +76,19 @@ export const rawClientConfig: ClientConfigInput = {
   /**
    * BRAND — the entire visual identity.
    *
-   * These values become CSS custom properties at build time. No component
-   * contains a hex code; every one reads var(--brand-*). Changing the
-   * colours below is what makes client B look different from client A —
-   * with zero component edits.
+   * THE DEFAULT PATH for a new client is now the THEME SYSTEM: set
+   * `theme: 'aqua' | 'luxury' | 'natural'` and, at most, override
+   * primary/accent/urgent — all 23 tokens derive with contrast guaranteed
+   * (src/config/themes.ts). See clients/lakeside-hot-tubs.config.ts.
    *
-   * This ramp is the template's shipped default look (deep navy + warm gold),
-   * ported from the reference build. Swap freely per client.
+   * THIS file deliberately takes the OTHER path: the full 23-key override.
+   * The shipped navy+gold ramp is a hand-tuned port of a live premium site
+   * (metallic golds resist HSL math), and keeping it pinned key-by-key is
+   * exactly what the override door exists for. Every value below wins over
+   * the theme's derived one.
    */
   brand: {
+    theme: 'aqua', // irrelevant while all 23 keys below override it
     colors: {
       primary: '#16469B',
       primaryMid: '#0F327A',
@@ -107,6 +111,8 @@ export const rawClientConfig: ClientConfigInput = {
       inkMuted: '#4A5268',
       onDark: '#C6D4EF',
       onDarkMuted: '#8FA6D2',
+      onDarkStrong: '#FFFFFF',
+      inkLift: '#2A3244',
     },
     fonts: {
       display: "'Bricolage Grotesque', system-ui, sans-serif",
@@ -144,7 +150,11 @@ export const rawClientConfig: ClientConfigInput = {
       { type: 'categories' },
       { type: 'link', label: 'Find Your Match', href: '/find-your-match', inHeader: true, inFooter: true },
       { type: 'link', label: 'Inventory', href: '/inventory', inHeader: true, inFooter: true },
-      { type: 'link', label: 'Financing', href: '/financing', inHeader: true, inFooter: true },
+      // Financing is NOT here by default, because `financing` below is null
+      // and /financing therefore 404s. Fill in the financing block, then add:
+      //   { type: 'link', label: 'Financing', href: '/financing', inHeader: true, inFooter: true },
+      // The gate crawls every nav link, so advertising a page you have not
+      // configured fails the build rather than shipping a dead link.
       { type: 'link', label: 'Visit Us', href: '/visit-us', inHeader: true, inFooter: true },
     ],
     // The ONE canonical "Shop Inventory" destination. On Sun Pool this
@@ -171,6 +181,86 @@ export const rawClientConfig: ClientConfigInput = {
   categories: {},
 
   serviceAreas: [],
+
+  /**
+   * FINANCING — null means this client has no financing page, and /financing
+   * returns 404. If your nav links to it, either fill this in or remove the
+   * nav item: the gate crawls every nav link and will fail on the dead one.
+   *
+   * Never invent a rate or a term. Everything here is a client fact, and a
+   * wrong one is a Truth-in-Lending problem rather than a typo.
+   */
+  financing: null,
+
+  /**
+   * DISPLAY — what a price is allowed to say.
+   *
+   * `showMonthly` is FALSE here because `financing` above is null. A monthly
+   * payment is a credit offer, and an offer with no lender and no disclaimer
+   * behind it is the claim that gets a client in trouble. Turning this on
+   * without a financing block FAILS THE BUILD, so the two cannot disagree.
+   */
+  display: {
+    showPrice: true,
+    showMonthly: false,
+  },
+
+  /**
+   * HOMEPAGE — an ordered list of sections. Reorder the list, reorder the
+   * page. Delete an entry, delete that section.
+   *
+   * This default deliberately contains NO copy that needs replacing. The
+   * headline falls back to `identity.tagline`; the category row builds itself
+   * from the enabled-categories array; the product row reads live inventory.
+   * A client site is therefore coherent the moment the facts above are true,
+   * and there is no "Replace this headline" left to forget.
+   *
+   * Add stats, reviews, a comparison table, an FAQ and the rest when the
+   * client gives you real material for them. Every section type is listed in
+   * the schema.
+   */
+  homepage: {
+    title: null, // falls back to identity.tagline
+    description: null, // falls back to identity.tagline
+    sections: [
+      {
+        type: 'hero',
+        // null → the tagline. Nothing to replace, nothing to go stale.
+        headline: null,
+        actions: [{ label: 'Shop Inventory', href: '/inventory', style: 'primary' }],
+      },
+      // Builds itself from the enabled categories. A category the client does
+      // not sell cannot appear here, because this section has no list to hold.
+      { type: 'categories', heading: 'What we sell' },
+      {
+        type: 'products',
+        heading: 'On the floor now',
+        limit: 4,
+        moreLink: { label: 'See everything in stock', href: '/inventory' },
+      },
+      {
+        type: 'cta',
+        heading: 'Not sure which one fits?',
+        buttonLabel: 'What are you shopping for?',
+        subtext: "Tell us what you're shopping for and we'll send current pricing on what's in stock.",
+      },
+      {
+        type: 'splitcards',
+        heading: 'Come see them',
+        items: [
+          {
+            title: 'Worth the drive',
+            body: "Photos don't tell you how a shell fits or how strong the jets are. Ten minutes in the showroom answers what hours of research cannot.",
+            // Address and hours are READ from the config above, never typed.
+            showAddress: true,
+            showHours: true,
+            actions: [{ label: 'Hours and directions', href: '/visit-us', style: 'primary' }],
+          },
+        ],
+      },
+    ],
+    disclosures: [],
+  },
 
   /**
    * INTEGRATIONS — binding names and on/off flags ONLY.

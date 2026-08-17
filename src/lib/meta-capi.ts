@@ -17,7 +17,7 @@
  * such problem, and carries IP and user-agent that improve matching.
  */
 
-import { hashEmail, hashPhone, hashName, sha256Hex } from './hash';
+import { hashEmail, hashPhone, hashName, hashPlain } from './hash';
 
 export interface CapiUserData {
   email: string;
@@ -30,6 +30,33 @@ export interface CapiUserData {
   fbc: string;
   clientIp: string;
   userAgent: string;
+  /**
+   * Geo match keys, from `request.cf` — Cloudflare hands them over free on
+   * every request (P-01, spec §2.5). Pass the raw cf values; normalisation
+   * and hashing happen HERE so no caller can send them wrong. `regionCode`
+   * and `country` are 2-letter codes as cf provides them. Absent or empty →
+   * the key is omitted entirely, never empty-string-hashed.
+   */
+  zip?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+/**
+ * Meta's normalisation for geo keys: lowercase, letters and digits only
+ * (no spaces or punctuation), and a US-shaped zip truncated to 5 digits.
+ */
+function normalizeGeo(value: string, kind: 'zp' | 'ct' | 'st' | 'country'): string {
+  const flat = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (kind === 'zp' && /^\d{5}/.test(flat)) return flat.slice(0, 5);
+  return flat;
+}
+
+/** Normalise-then-hash for an optional geo value. '' or undefined → null. */
+function hashGeo(value: string | undefined, kind: 'zp' | 'ct' | 'st' | 'country') {
+  const normalized = value ? normalizeGeo(value, kind) : '';
+  return normalized ? hashPlain(normalized) : Promise.resolve(null);
 }
 
 export interface CapiEvent {
@@ -37,6 +64,17 @@ export interface CapiEvent {
   /** THE dedup key. Must match what the browser sent. */
   eventId: string;
   eventSourceUrl: string;
+  /**
+   * Where the conversion happened. 'website' for anything a browser did;
+   * 'system_generated' for a CRM stage change reported after the fact.
+   * Defaults to 'website' so every existing caller behaves exactly as before.
+   */
+  actionSource?: 'website' | 'system_generated';
+  /**
+   * Unix SECONDS. Defaults to now. Set it when reporting something that
+   * happened earlier — Meta rejects events older than seven days.
+   */
+  eventTime?: number;
   user: CapiUserData;
   custom?: Record<string, unknown>;
 }
@@ -82,19 +120,32 @@ export async function sendMetaCapi(
   const version = config.apiVersion ?? 'v21.0';
   const url = `https://graph.facebook.com/${version}/${config.pixelId}/events`;
 
-  const [em, ph, fn, ln, externalId] = await Promise.all([
+  const [em, ph, fn, ln, zp, ct, st, country] = await Promise.all([
     hashEmail(event.user.email),
     hashPhone(event.user.phone),
     hashName(event.user.firstName),
     hashName(event.user.lastName),
-    event.user.externalId ? sha256Hex(event.user.externalId) : Promise.resolve(null),
+    hashGeo(event.user.zip, 'zp'),
+    hashGeo(event.user.city, 'ct'),
+    hashGeo(event.user.state, 'st'),
+    hashGeo(event.user.country, 'country'),
   ]);
+
+  // external_id goes RAW. The browser pixel sends the raw lead UUID; Meta
+  // matches the two values as sent, so hashing here guaranteed a mismatch —
+  // the secondary match key was dead on every server event. em/ph/fn/ln are
+  // PII and MUST be hashed; the UUID is our own opaque value and must not be.
+  const externalId = event.user.externalId || null;
 
   const userData = compact({
     em: em ? [em] : [],
     ph: ph ? [ph] : [],
     fn: fn ? [fn] : [],
     ln: ln ? [ln] : [],
+    zp: zp ? [zp] : [],
+    ct: ct ? [ct] : [],
+    st: st ? [st] : [],
+    country: country ? [country] : [],
     external_id: externalId ? [externalId] : [],
     fbp: event.user.fbp,
     fbc: event.user.fbc,
@@ -106,9 +157,9 @@ export async function sendMetaCapi(
     data: [
       compact({
         event_name: event.eventName,
-        event_time: Math.floor(Date.now() / 1000),
+        event_time: event.eventTime ?? Math.floor(Date.now() / 1000),
         event_id: event.eventId,
-        action_source: 'website',
+        action_source: event.actionSource ?? 'website',
         event_source_url: event.eventSourceUrl,
         user_data: userData,
         custom_data: event.custom ? compact(event.custom) : undefined,
@@ -137,7 +188,16 @@ export async function sendMetaCapi(
     try {
       received = (JSON.parse(text) as { events_received?: number }).events_received;
     } catch {
-      /* Meta returned something unexpected but a 2xx; treat as sent. */
+      // A 2xx whose body we cannot parse is treated as sent, but never
+      // silently: without this line "did Meta actually count it?" is
+      // unanswerable from the logs (I-11).
+      console.warn('[capi] 2xx with unparseable body — events_received unknown:', text.slice(0, 200));
+    }
+    if (received !== undefined && received !== 1) {
+      // We send exactly one event per payload; anything else means Meta
+      // did not count what we think it counted (I-10 — log only for now,
+      // behaviour review at AL-4).
+      console.warn(`[capi] events_received=${received}, expected 1 (event may not have counted)`);
     }
     return { ok: true, status: res.status, detail: text.slice(0, 300), eventsReceived: received };
   } catch (error) {

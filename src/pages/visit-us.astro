@@ -1,0 +1,182 @@
+---
+/**
+ * VISIT US — address, hours, directions, phone.
+ *
+ * Note what this file does NOT contain: an address, a phone number, opening
+ * hours, a map URL, or a directions link. Every one of those is read or
+ * derived from config. The map embed and the directions URL in particular are
+ * DERIVED from the address — they are not second copies of it, which is why
+ * moving the shop is a one-line change and cannot leave a stale map behind.
+ *
+ * On the old site this page existed under five different nav labels
+ * ("Contact" / "Visit Us" / "VISIT US" / "Contact Us" / "Visit"). Here the
+ * label lives once, in config, and this route is what it points at.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import LeadQuiz from '../components/LeadQuiz.astro';
+import { site, derived } from '../config';
+---
+
+<BaseLayout
+  title="Visit Us"
+  description={`Come see ${site.identity.name} in ${site.address.city}, ${site.address.region}. Address, opening hours and directions.`}
+  path="/visit-us"
+>
+  <section class="vu-head">
+    <div class="wrap">
+      <p class="eyebrow">{site.address.city}, {site.address.region}</p>
+      <h1>Come see them in person</h1>
+      <p class="vu-sub">
+        Photos only tell you so much. Everything is on the floor, filled and running, and
+        someone who knows them is here to answer questions.
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Breadcrumbs trail={[{ label: 'Visit Us', href: '/visit-us' }]} />
+  </div>
+
+  <section class="vu-body wrap">
+    <div class="vu-details">
+      <h2>Where</h2>
+      <address class="vu-address">
+        {derived.addressLines.map((line) => <span>{line}</span>)}
+      </address>
+      <a class="btn btn-gold" href={derived.directionsUrl} rel="noopener" target="_blank">
+        Get directions
+      </a>
+
+      <h2 class="vu-h2">When</h2>
+      <ul class="vu-hours">
+        {
+          derived.hoursDisplay.map((h) => (
+            <li>
+              <span class="vu-days">{h.days}</span>
+              <span class="vu-time">{h.time}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <h2 class="vu-h2">Talk to someone</h2>
+      <p class="vu-line">
+        <a href={derived.telHref}>{derived.phoneDisplay}</a>
+      </p>
+      {
+        derived.emailHref && (
+          <p class="vu-line">
+            <a href={derived.emailHref}>{site.contact.email}</a>
+          </p>
+        )
+      }
+      {
+        site.serviceAreas.length > 0 && (
+          <>
+            <h2 class="vu-h2">Areas served</h2>
+            <p class="vu-areas">{site.serviceAreas.join(' · ')}</p>
+          </>
+        )
+      }
+    </div>
+
+    <div class="vu-map">
+      <iframe
+        title={`Map to ${site.identity.name}`}
+        src={derived.mapEmbedUrl}
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <section class="vu-quiz wrap">
+    <LeadQuiz
+      sourcePage="/visit-us"
+      heading="Want pricing before you drive out?"
+      variant="secondary"
+    />
+  </section>
+</BaseLayout>
+
+<style>
+  .vu-head {
+    background: var(--brand-night);
+    color: var(--brand-on-dark);
+    padding: 3rem 0 2.5rem;
+  }
+  .vu-head h1 {
+    font-family: var(--brand-font-display);
+    font-size: clamp(1.9rem, 5.5vw, 2.8rem);
+    margin: 0.4rem 0 0;
+  }
+  .vu-sub {
+    margin: 0.85rem 0 0;
+    max-width: 46ch;
+    color: var(--brand-on-dark-muted);
+  }
+  .vu-body {
+    display: grid;
+    gap: 2rem;
+    padding: 2.5rem 0;
+  }
+  .vu-h2 {
+    margin-top: 2rem;
+  }
+  .vu-details h2 {
+    font-family: var(--brand-font-display);
+    font-size: 1.15rem;
+    margin-bottom: 0.6rem;
+  }
+  .vu-address {
+    font-style: normal;
+    display: grid;
+    gap: 0.15rem;
+    margin-bottom: 1rem;
+  }
+  .vu-hours {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .vu-hours li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-deep) 12%, transparent);
+    max-width: 24rem;
+  }
+  .vu-days {
+    font-weight: 600;
+  }
+  .vu-time {
+    color: var(--brand-ink-muted);
+  }
+  .vu-line {
+    margin: 0.25rem 0;
+    font-size: 1.05rem;
+  }
+  .vu-areas {
+    color: var(--brand-ink-muted);
+    margin: 0;
+  }
+  .vu-map iframe {
+    width: 100%;
+    height: 380px;
+    border: 0;
+    border-radius: var(--brand-radius-card);
+  }
+  .vu-quiz {
+    padding-bottom: 3.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .vu-body {
+      grid-template-columns: 1fr 1.1fr;
+      gap: 3rem;
+    }
+  }
+</style>

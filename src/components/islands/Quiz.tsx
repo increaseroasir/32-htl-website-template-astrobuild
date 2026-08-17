@@ -21,6 +21,7 @@
 import { useState, type FormEvent } from 'react';
 import { useStore } from '@nanostores/react';
 import { quizStore, selectCategory, resetQuiz } from '../../stores/quiz';
+import { CONSENT_VERSION, consentTextFor } from '../../config/consent';
 
 export interface QuizOption {
   slug: string;
@@ -96,11 +97,10 @@ export default function Quiz({
     e.preventDefault();
     setError(null);
 
-    if (company.trim().length > 0) {
-      // Silently succeed for bots — no signal about why.
-      window.location.href = '/thank-you';
-      return;
-    }
+    // The honeypot verdict lives on the SERVER (validateLead) — a single
+    // decider that also catches bots POSTing straight to the API. The field
+    // is still submitted below; the client no longer pre-empts it, so every
+    // drop is server-logged instead of silently swallowed here (I-07).
 
     setSubmitting(true);
     const clientEventId = crypto.randomUUID();
@@ -109,7 +109,15 @@ export default function Quiz({
       const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, category, productSlug, sourcePage, eventId: clientEventId }),
+        body: JSON.stringify({
+          ...form,
+          company, // honeypot — the server is the decider (validateLead)
+          category,
+          productSlug,
+          sourcePage,
+          eventId: clientEventId,
+          consentVersion: CONSENT_VERSION,
+        }),
       });
 
       const data = (await res.json()) as {
@@ -117,6 +125,7 @@ export default function Quiz({
         error?: string;
         eventId?: string;
         leadUuid?: string;
+        duplicate?: boolean;
       };
 
       if (!data.ok) {
@@ -125,37 +134,45 @@ export default function Quiz({
         return;
       }
 
-      // THE DEDUP KEY. Use the id the SERVER recorded, not the one this
-      // component generated — if they ever diverge, the server's is the one
-      // written to lead_events and sent to the Conversions API, so matching
-      // it here is what makes Meta count one lead instead of two.
-      const eventId = data.eventId ?? clientEventId;
+      // THE ONLY GATE ON THE BROWSER CONVERSION IS DUPLICATE STATUS
+      // (gate-enforced). A CRM or CAPI failure is a server problem the
+      // browser cannot see and must not gate on; a duplicate means the
+      // conversion for this human already counted inside 24h, and firing
+      // the browser half again would teach Meta to buy them twice.
+      if (!data.duplicate) {
+        // THE DEDUP KEY. Use the id the SERVER recorded, not the one this
+        // component generated — if they ever diverge, the server's is the one
+        // written to lead_events and sent to the Conversions API, so matching
+        // it here is what makes Meta count one lead instead of two.
+        const eventId = data.eventId ?? clientEventId;
 
-      const [firstName = '', ...rest] = form.name.trim().split(' ');
-      track('lead_submit', {
-        event_id: eventId,
-        lead_uuid: data.leadUuid,
-        category,
-        category_label: categoryLabel,
-        product_slug: productSlug,
-        source_page: sourcePage,
-        currency: 'USD',
-        // Meta's Automatic Advanced Matching hashes these in the browser.
-        // They are never logged by us; they go straight to the tag.
-        email: form.email,
-        phone: form.phone,
-        first_name: firstName,
-        last_name: rest.join(' '),
-      });
+        const [firstName = '', ...rest] = form.name.trim().split(' ');
+        track('lead_submit', {
+          event_id: eventId,
+          lead_uuid: data.leadUuid,
+          category,
+          category_label: categoryLabel,
+          product_slug: productSlug,
+          source_page: sourcePage,
+          currency: 'USD',
+          // Meta's Automatic Advanced Matching hashes these in the browser.
+          // They are never logged by us; they go straight to the tag.
+          email: form.email,
+          phone: form.phone,
+          first_name: firstName,
+          last_name: rest.join(' '),
+        });
 
-      // Tell the server the browser half fired, so the audit row can show
-      // 1/1 rather than leaving the client side permanently unknown.
-      void fetch('/api/lead', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId }),
-        keepalive: true,
-      }).catch(() => undefined);
+        // Tell the server the browser half fired, so the audit row can show
+        // 1/1 rather than leaving the client side permanently unknown. A
+        // suppressed duplicate fired nothing, so it PATCHes nothing.
+        void fetch('/api/lead', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId }),
+          keepalive: true,
+        }).catch(() => undefined);
+      }
 
       // A short beat so the tag manager's beacon leaves before navigation.
       // Zaraz sends server-side, but the client still has to hand it over.
@@ -294,11 +311,7 @@ export default function Quiz({
           {submitting ? 'Sending…' : 'Get my pricing →'}
         </button>
 
-        <p className="quiz-consent">
-          By submitting, I agree that {businessName} may call, text, and email me about my
-          enquiry, including with automated messages. Consent is not a condition of purchase.
-          Reply STOP to opt out.
-        </p>
+        <p className="quiz-consent">{consentTextFor(CONSENT_VERSION, businessName)}</p>
       </form>
     </section>
   );
