@@ -32,14 +32,23 @@ const { sections, sourcePage } = Astro.props;
  */
 const db = getDb();
 const productsBySection = new Map<number, Product[]>();
-for (const [i, section] of sections.entries()) {
-  if (section.type !== 'products') continue;
-  if (!db) {
-    productsBySection.set(i, []);
-    continue;
-  }
-  const rows = await listProducts(db, section.category ? { category: section.category } : {});
-  productsBySection.set(i, rows.slice(0, section.limit));
+const productSections = sections
+  .map((section, i) => ({ section, i }))
+  .filter((entry): entry is { section: Extract<Section, { type: 'products' }>; i: number } => entry.section.type === 'products');
+if (!db) {
+  for (const { i } of productSections) productsBySection.set(i, []);
+} else {
+  const rowsList = await Promise.all(
+    productSections.map(({ section }) =>
+      listProducts(db, {
+        ...(section.category ? { category: section.category } : {}),
+        limit: section.limit,
+      }),
+    ),
+  );
+  productSections.forEach(({ i }, idx) => {
+    productsBySection.set(i, rowsList[idx] ?? []);
+  });
 }
 
 /** Footnote markers numbered in the order they appear on the page. */

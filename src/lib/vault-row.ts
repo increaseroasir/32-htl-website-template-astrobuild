@@ -213,6 +213,8 @@ export function buildMissedRow(input: MissedRowInput): (string | number)[] {
   return MISSED_COLUMNS.map((column) => row[column]);
 }
 
+export type VaultRowStatus = 'SENT' | 'DRIFTED' | 'FAILED' | 'UNCONFIGURED' | '';
+
 /**
  * DRIFTED IS NOT RETRYABLE. A drifted row exists in the sheet, in the
  * wrong columns, invisible to every column-A reader. Retrying appends a
@@ -223,6 +225,43 @@ export function buildMissedRow(input: MissedRowInput): (string | number)[] {
  */
 export function shouldWriteVaultRow(priorVaultStatus: string): boolean {
   return priorVaultStatus !== 'DRIFTED';
+}
+
+/** Outcome of a sheet upsert — enough to persist SENT / DRIFTED / FAILED. */
+export interface VaultWriteOutcome {
+  ok: boolean;
+  status: number;
+  drifted?: boolean;
+  updatedRange?: string;
+  error?: string;
+}
+
+export function vaultStatusFromWrite(result: VaultWriteOutcome): {
+  status: 'SENT' | 'DRIFTED' | 'FAILED';
+  detail: string;
+} {
+  const status = result.ok ? (result.drifted ? 'DRIFTED' : 'SENT') : 'FAILED';
+  const detail = result.ok
+    ? result.drifted
+      ? `landed at ${result.updatedRange ?? '?'} — NOT retryable; repair the sheet layout by hand`
+      : ''
+    : `${result.status}: ${result.error ?? 'write failed'}`.slice(0, 300);
+  return { status, detail };
+}
+
+export async function persistVaultWrite(
+  db: D1Database,
+  uuid: string,
+  result: VaultWriteOutcome,
+): Promise<{ status: 'SENT' | 'DRIFTED' | 'FAILED'; detail: string }> {
+  const { status, detail } = vaultStatusFromWrite(result);
+  await db
+    .prepare(
+      'UPDATE leads SET vault_status = ?, vault_error = ?, vault_synced_at = ?, updated_at = ? WHERE uuid = ?',
+    )
+    .bind(status, detail, status === 'SENT' ? Date.now() : null, Date.now(), uuid)
+    .run();
+  return { status, detail };
 }
 
 /**

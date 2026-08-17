@@ -77,6 +77,10 @@ export const CATEGORY_CATALOG: readonly CategoryDefinition[] = [
   },
 ] as const;
 
+export const CATEGORY_SEGMENTS: { readonly [K in CategorySlug]: string } = Object.fromEntries(
+  CATEGORY_CATALOG.map((c) => [c.slug, c.segment]),
+) as { readonly [K in CategorySlug]: string };
+
 /** Lookup by slug. Returns undefined for unknown slugs — callers must handle it. */
 export function findCategory(slug: string): CategoryDefinition | undefined {
   return CATEGORY_CATALOG.find((c) => c.slug === slug);

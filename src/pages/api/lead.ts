@@ -17,6 +17,7 @@
 
 import type { APIRoute } from 'astro';
 import { getDb, inventoryStatus } from '../../lib/db';
+import { json } from '../../lib/http';
 import { site, derived } from '../../config';
 import { validateLead, clean } from '../../lib/validate-lead';
 import { getEnv } from '../../lib/admin-auth';
@@ -24,18 +25,30 @@ import { sendMetaCapi, deriveFbc, type CapiResult } from '../../lib/meta-capi';
 import { syncToGhl, buildGhlTags, type GhlResult } from '../../lib/ghl';
 import { resolveEventValue } from '../../lib/capi-events';
 import { sheetsConfigFromEnv, upsertRowByLeadUuid, appendRow, MISSED_TAB } from '../../lib/sheets';
-import { buildVaultRow, buildMissedRow, shouldWriteVaultRow } from '../../lib/vault-row';
+import { buildVaultRow, buildMissedRow, shouldWriteVaultRow, persistVaultWrite } from '../../lib/vault-row';
 import { findRecentDuplicate, duplicateDecision, type DuplicateDecision } from '../../lib/duplicates';
 import { enrichFromInventory } from '../../lib/enrich';
-import { alertConfigFromEnv, sendFailureAlert } from '../../lib/alert';
+import { alertConfigFromEnv, sendFailureAlert, type FailureKind } from '../../lib/alert';
 
 export const prerender = false;
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
+function conversionStatusFor(
+  suppress: boolean,
+  metaEnabled: boolean,
+  capiOk: boolean,
+): 'DUPLICATE' | 'DISABLED' | 'SENT' | 'FAILED' {
+  if (suppress) return 'DUPLICATE';
+  if (!metaEnabled) return 'DISABLED';
+  return capiOk ? 'SENT' : 'FAILED';
+}
+
+function ghlVaultStatus(
+  ghlEnabled: boolean,
+  ghlResult: { ok: boolean; contactId: string },
+): 'DISABLED' | 'SENT' | 'SENT_NO_ID' | 'FAILED' {
+  if (!ghlEnabled) return 'DISABLED';
+  if (!ghlResult.ok) return 'FAILED';
+  return ghlResult.contactId ? 'SENT' : 'SENT_NO_ID';
 }
 
 export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }) => {
@@ -113,8 +126,22 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
   const uuid = cookies.get('lead_uuid')?.value ?? crypto.randomUUID();
   const now = Date.now();
 
-  const ft = (key: string): string => cookies.get(`ft_${key}`)?.value ?? '';
-  const lt = (key: string): string => cookies.get(`lt_${key}`)?.value ?? '';
+  const firstTouch = {
+    utm_source: cookies.get('ft_utm_source')?.value ?? '',
+    utm_medium: cookies.get('ft_utm_medium')?.value ?? '',
+    utm_campaign: cookies.get('ft_utm_campaign')?.value ?? '',
+    utm_content: cookies.get('ft_utm_content')?.value ?? '',
+    utm_term: cookies.get('ft_utm_term')?.value ?? '',
+    fbclid: cookies.get('ft_fbclid')?.value ?? '',
+    gclid: cookies.get('ft_gclid')?.value ?? '',
+    ttclid: cookies.get('ft_ttclid')?.value ?? '',
+  };
+  const lastTouch = {
+    utm_source: cookies.get('lt_utm_source')?.value ?? '',
+    utm_campaign: cookies.get('lt_utm_campaign')?.value ?? '',
+  };
+  const fbp = cookies.get('_fbp')?.value ?? '';
+  const fbc = cookies.get('_fbc')?.value ?? '';
 
   // CROSS-SESSION DUPLICATE CHECK — one indexed D1 read (never a sheet
   // read), BEFORE this submission's own row lands (afterwards the query
@@ -138,9 +165,10 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
   }
 
   try {
-    await db
-      .prepare(
-        `INSERT INTO leads (
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO leads (
            uuid, first_name, last_name, email, phone,
            category, product_slug, message, source_page,
            first_touch_utm_source, first_touch_utm_medium, first_touch_utm_campaign,
@@ -167,52 +195,45 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
            consent_url     = excluded.consent_url,
            conversion_status = excluded.conversion_status,
            updated_at = excluded.updated_at`,
-      )
-      .bind(
-        uuid,
-        firstName,
-        lastName,
-        email,
-        phone,
-        category,
-        productSlug,
-        message,
-        sourcePage,
-        ft('utm_source'),
-        ft('utm_medium'),
-        ft('utm_campaign'),
-        ft('utm_content'),
-        ft('utm_term'),
-        ft('fbclid'),
-        ft('gclid'),
-        ft('ttclid'),
-        lt('utm_source'),
-        lt('utm_campaign'),
-        cookies.get('_fbp')?.value ?? '',
-        cookies.get('_fbc')?.value ?? '',
-        clientAddress ?? '',
-        request.headers.get('user-agent') ?? '',
-        consentVersion,
-        consentText,
-        sourcePage,
-        // PENDING until the syncs below resolve it — a request that dies
-        // here leaves an honest in-flight mark, and the duplicate rule
-        // treats PENDING as "counted" rather than double-firing.
-        'PENDING',
-        now,
-        now,
-      )
-      .run();
-
-    // The dedup key is recorded BEFORE either side fires, so both read the
-    // same value rather than each inventing one.
-    await db
-      .prepare(
-        `INSERT INTO lead_events (lead_uuid, event_name, event_id, fired_client_side, fired_server_side, payload, created_at)
+        )
+        .bind(
+          uuid,
+          firstName,
+          lastName,
+          email,
+          phone,
+          category,
+          productSlug,
+          message,
+          sourcePage,
+          firstTouch.utm_source,
+          firstTouch.utm_medium,
+          firstTouch.utm_campaign,
+          firstTouch.utm_content,
+          firstTouch.utm_term,
+          firstTouch.fbclid,
+          firstTouch.gclid,
+          firstTouch.ttclid,
+          lastTouch.utm_source,
+          lastTouch.utm_campaign,
+          fbp,
+          fbc,
+          clientAddress ?? '',
+          request.headers.get('user-agent') ?? '',
+          consentVersion,
+          consentText,
+          sourcePage,
+          'PENDING',
+          now,
+          now,
+        ),
+      db
+        .prepare(
+          `INSERT INTO lead_events (lead_uuid, event_name, event_id, fired_client_side, fired_server_side, payload, created_at)
          VALUES (?, ?, ?, 0, 0, ?, ?)`,
-      )
-      .bind(uuid, 'Lead', eventId, JSON.stringify({ category, productSlug, sourcePage }), now)
-      .run();
+        )
+        .bind(uuid, 'Lead', eventId, JSON.stringify({ category, productSlug, sourcePage }), now),
+    ]);
 
     /* ---------------------------------------------------------------
        Downstream sync. The lead is ALREADY SAVED at this point.
@@ -276,8 +297,8 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
               tags: buildGhlTags({
                 category,
                 productSlug,
-                utmSource: ft('utm_source'),
-                utmCampaign: ft('utm_campaign'),
+                utmSource: firstTouch.utm_source,
+                utmCampaign: firstTouch.utm_campaign,
                 ...(product ? { productName: product.name, productTags: product.ghlTags } : {}),
               }),
               customFields: {
@@ -297,15 +318,15 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
                   : {}),
                 message,
                 source_page: sourcePage,
-                first_touch_utm_source: ft('utm_source'),
-                first_touch_utm_medium: ft('utm_medium'),
-                first_touch_utm_campaign: ft('utm_campaign'),
-                first_touch_ad_name: ft('utm_content'),
-                first_touch_utm_term: ft('utm_term'),
-                first_touch_fbclid: ft('fbclid'),
-                first_touch_gclid: ft('gclid'),
-                last_touch_utm_source: lt('utm_source'),
-                last_touch_utm_campaign: lt('utm_campaign'),
+                first_touch_utm_source: firstTouch.utm_source,
+                first_touch_utm_medium: firstTouch.utm_medium,
+                first_touch_utm_campaign: firstTouch.utm_campaign,
+                first_touch_ad_name: firstTouch.utm_content,
+                first_touch_utm_term: firstTouch.utm_term,
+                first_touch_fbclid: firstTouch.fbclid,
+                first_touch_gclid: firstTouch.gclid,
+                last_touch_utm_source: lastTouch.utm_source,
+                last_touch_utm_campaign: lastTouch.utm_campaign,
               },
             },
           )
@@ -333,10 +354,10 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
                 firstName,
                 lastName,
                 externalId: uuid,
-                fbp: cookies.get('_fbp')?.value ?? '',
+                fbp,
                 // Reconstructed from the stored fbclid when the pixel never
                 // ran, so a blocked-pixel visitor keeps click attribution.
-                fbc: deriveFbc(cookies.get('_fbc')?.value ?? '', ft('fbclid'), now),
+                fbc: deriveFbc(fbc, firstTouch.fbclid, now),
                 clientIp: clientAddress ?? '',
                 userAgent: request.headers.get('user-agent') ?? '',
                 // Free geo match keys from Cloudflare's edge (P-01, spec
@@ -369,13 +390,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
     // The per-lead conversion outcome, recorded in D1 (migration 0004).
     // This is what the NEXT submission's duplicate check reads: FAILED
     // invites a retry; SENT / DUPLICATE / PENDING / DISABLED suppress.
-    const conversionStatus = duplicate.suppress
-      ? 'DUPLICATE'
-      : !metaEnabled
-        ? 'DISABLED'
-        : capiResult.ok
-          ? 'SENT'
-          : 'FAILED';
+    const conversionStatus = conversionStatusFor(duplicate.suppress, metaEnabled, capiResult.ok);
 
     if (ghlResult.ok && ghlResult.contactId) {
       await db
@@ -402,27 +417,27 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
     // happened — bookkeeping failing may not turn success into a customer
     //-facing 500.
     try {
-      await db
-        .prepare('UPDATE leads SET conversion_status = ?, updated_at = ? WHERE uuid = ?')
-        .bind(conversionStatus, Date.now(), uuid)
-        .run();
-      await db
-        .prepare('UPDATE lead_events SET fired_server_side = ?, payload = ? WHERE event_id = ?')
-        .bind(
-          capiResult.ok ? 1 : 0,
-          JSON.stringify({
-            category,
-            productSlug,
-            sourcePage,
-            ghl: { enabled: ghlEnabled, ok: ghlResult.ok, status: ghlResult.status, contactId: ghlResult.contactId },
-            capi: { enabled: metaEnabled, ok: capiResult.ok, status: capiResult.status, received: capiResult.eventsReceived },
-            // Why nothing fired, when nothing fired — the audit answers
-            // "was this lead double counted?" AND "why is there no event?"
-            duplicate: duplicate.suppress ? { of: duplicate.priorUuid } : false,
-          }),
-          eventId,
-        )
-        .run();
+      await db.batch([
+        db.prepare('UPDATE leads SET conversion_status = ?, updated_at = ? WHERE uuid = ?').bind(
+          conversionStatus,
+          Date.now(),
+          uuid,
+        ),
+        db
+          .prepare('UPDATE lead_events SET fired_server_side = ?, payload = ? WHERE event_id = ?')
+          .bind(
+            capiResult.ok ? 1 : 0,
+            JSON.stringify({
+              category,
+              productSlug,
+              sourcePage,
+              ghl: { enabled: ghlEnabled, ok: ghlResult.ok, status: ghlResult.status, contactId: ghlResult.contactId },
+              capi: { enabled: metaEnabled, ok: capiResult.ok, status: capiResult.status, received: capiResult.eventsReceived },
+              duplicate: duplicate.suppress ? { of: duplicate.priorUuid } : false,
+            }),
+            eventId,
+          ),
+      ]);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       console.error('[lead] audit UPDATE failed after commit — lead saved, syncs ran, bookkeeping lost:', detail);
@@ -450,7 +465,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
       // Failures collected across BOTH halves of the task, so a GHL or
       // CAPI failure still alerts even when the vault write is refused
       // (drifted) or skipped (unconfigured).
-      const failures: { kind: string; detail: string }[] = [];
+      const failures: { kind: FailureKind; detail: string }[] = [];
       const sheets = sheetsConfigFromEnv(e);
       try {
         // DRIFTED IS NOT RETRYABLE — checked FIRST, before the config
@@ -524,9 +539,11 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
         }
 
         const alertConfig = alertConfigFromEnv(e);
-        for (const failure of failures) {
-          await sendFailureAlert(alertConfig, { kind: failure.kind, leadUuid: uuid, detail: failure.detail });
-        }
+        await Promise.all(
+          failures.map((failure) =>
+            sendFailureAlert(alertConfig, { kind: failure.kind, leadUuid: uuid, detail: failure.detail }),
+          ),
+        );
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         console.error('[alert] failure handling itself failed — lead safe, alert lost:', detail);
@@ -549,28 +566,13 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
             productSlug,
             message,
             sourcePage,
-            firstTouch: {
-              utm_source: ft('utm_source'),
-              utm_medium: ft('utm_medium'),
-              utm_campaign: ft('utm_campaign'),
-              utm_content: ft('utm_content'),
-              utm_term: ft('utm_term'),
-              fbclid: ft('fbclid'),
-              gclid: ft('gclid'),
-              ttclid: ft('ttclid'),
-            },
+            firstTouch,
             eventId,
             // The RAW cookie values, mirroring exactly what the D1 row
             // holds — the sheet may never disagree with the database.
-            fbp: cookies.get('_fbp')?.value ?? '',
-            fbc: cookies.get('_fbc')?.value ?? '',
-            ghlStatus: !ghlEnabled
-              ? 'DISABLED'
-              : ghlResult.ok
-                ? ghlResult.contactId
-                  ? 'SENT'
-                  : 'SENT_NO_ID'
-                : 'FAILED',
+            fbp,
+            fbc,
+            ghlStatus: ghlVaultStatus(ghlEnabled, ghlResult),
             ghlContactId: ghlResult.contactId,
             ghlError: ghlResult.ok ? '' : ghlResult.detail.slice(0, 300),
             // The same value the duplicate check reads from D1 — the
@@ -585,18 +587,8 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress, locals }
           }),
         );
 
-        const status = result.ok ? (result.drifted ? 'DRIFTED' : 'SENT') : 'FAILED';
-        const detail = result.ok
-          ? result.drifted
-            ? `landed at ${result.updatedRange ?? '?'} — NOT retryable; repair the sheet layout by hand`
-            : ''
-          : `${result.status}: ${result.error ?? 'write failed'}`.slice(0, 300);
-        await db
-          .prepare(
-            'UPDATE leads SET vault_status = ?, vault_error = ?, vault_synced_at = ?, updated_at = ? WHERE uuid = ?',
-          )
-          .bind(status, detail, status === 'SENT' ? Date.now() : null, Date.now(), uuid)
-          .run();
+        if (!db) return;
+        const { status, detail } = await persistVaultWrite(db, uuid, result);
         if (status !== 'SENT') {
           // The durability mirror itself failed or drifted — the loudest
           // alert of the three (spec: if the vault is down, everything

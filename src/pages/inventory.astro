@@ -20,8 +20,9 @@ import { buildItemList } from '../lib/seo';
 const db = getDb();
 const dbStatus = inventoryStatus(db);
 if (!dbStatus.configured) console.error('[inventory]', dbStatus.operatorDetail);
-const products = db ? await listProducts(db) : [];
-const counts = db ? await countProductsByCategory(db) : {};
+const [products, counts] = db
+  ? await Promise.all([listProducts(db), countProductsByCategory(db)])
+  : [[], {}];
 const itemList = buildItemList(products, `Inventory at ${site.identity.name}`);
 ---
 

@@ -33,6 +33,7 @@
  */
 
 import { env } from 'cloudflare:workers';
+import { sha256Hex } from './hash';
 
 export interface AdminSession {
   token_hash: string;
@@ -48,14 +49,7 @@ export function getEnv(): Partial<Env> {
 }
 
 export { secretsMatch } from './secrets';
-
-/** Hex SHA-256. Same helper, same output as the original `sha256()`. */
-export async function sha256(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+export { sha256Hex as sha256 } from './hash';
 
 /** Is admin usable at all? Missing secrets means "not configured", not "open". */
 export function adminConfigured(): boolean {
@@ -78,7 +72,7 @@ export async function requireSession(
   const token = auth.replace(/^Bearer\s+/i, '');
   if (!token) return null;
 
-  const tokenHash = await sha256(token + e.ADMIN_SESSION_SECRET);
+  const tokenHash = await sha256Hex(token + e.ADMIN_SESSION_SECRET);
   const row = await db
     .prepare('SELECT * FROM admin_sessions WHERE token_hash = ? AND expires_at > ?')
     .bind(tokenHash, Date.now())
@@ -94,7 +88,7 @@ export async function requireSession(
 export async function createSession(db: D1Database): Promise<string> {
   const e = getEnv();
   const token = crypto.randomUUID() + crypto.randomUUID();
-  const tokenHash = await sha256(token + (e.ADMIN_SESSION_SECRET ?? ''));
+  const tokenHash = await sha256Hex(token + (e.ADMIN_SESSION_SECRET ?? ''));
   const now = Date.now();
 
   await db.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?').bind(now).run();
@@ -112,6 +106,6 @@ export async function destroySession(db: D1Database, request: Request): Promise<
   if (!e.ADMIN_SESSION_SECRET) return;
   const token = (request.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   if (!token) return;
-  const tokenHash = await sha256(token + e.ADMIN_SESSION_SECRET);
+  const tokenHash = await sha256Hex(token + e.ADMIN_SESSION_SECRET);
   await db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').bind(tokenHash).run();
 }

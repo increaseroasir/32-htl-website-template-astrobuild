@@ -24,9 +24,11 @@ export function alertConfigFromEnv(env: { ALERT_WEBHOOK_URL?: string }): AlertCo
   return webhookUrl ? { webhookUrl } : null;
 }
 
+export type FailureKind = 'ghl' | 'capi' | 'vault';
+
 export interface FailureAlert {
-  /** Which leg failed: 'ghl' | 'capi' | 'vault' (open set for later tickets). */
-  kind: string;
+  /** Which leg failed. */
+  kind: FailureKind;
   leadUuid: string;
   detail: string;
 }

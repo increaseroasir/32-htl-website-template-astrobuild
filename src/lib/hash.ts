@@ -7,6 +7,8 @@
  * a mis-normalised email simply never matches anyone and no error is raised.
  */
 
+import { digitsOnly } from './validate-lead';
+
 /** Hex SHA-256. */
 export async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
@@ -28,7 +30,7 @@ export async function hashEmail(email: string): Promise<string | null> {
  * is passed through as-is rather than guessed at.
  */
 export async function hashPhone(phone: string, defaultCountryCode = '1'): Promise<string | null> {
-  const digits = phone.replace(/\D/g, '');
+  const digits = digitsOnly(phone);
   if (!digits) return null;
   const e164 = digits.length === 10 ? `${defaultCountryCode}${digits}` : digits;
   return sha256Hex(e164);

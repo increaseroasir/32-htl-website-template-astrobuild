@@ -37,6 +37,8 @@
  *     browser tag still fired once).
  */
 
+import { digitsOnly } from './validate-lead';
+
 export const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export function normalizeEmailForDup(email: string): string {
@@ -45,15 +47,24 @@ export function normalizeEmailForDup(email: string): string {
 
 /** Digits only, one leading 1 removed, last 10 kept. */
 export function normalizePhoneForDup(phone: string): string {
-  let digits = phone.replace(/\D/g, '');
+  let digits = digitsOnly(phone);
   if (digits.startsWith('1')) digits = digits.slice(1);
   return digits.slice(-10);
 }
 
+export type ConversionStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'FAILED'
+  | 'DUPLICATE'
+  | 'DISABLED'
+  | 'NONE'
+  | '';
+
 export interface DuplicateHit {
   uuid: string;
   created_at: number;
-  conversion_status: string;
+  conversion_status: ConversionStatus | string;
 }
 
 /**

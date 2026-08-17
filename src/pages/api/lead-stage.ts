@@ -37,6 +37,7 @@
 
 import type { APIRoute } from 'astro';
 import { getDb } from '../../lib/db';
+import { json, bearer } from '../../lib/http';
 import { site } from '../../config';
 import { getEnv } from '../../lib/admin-auth';
 import { secretsMatch } from '../../lib/secrets';
@@ -67,18 +68,6 @@ interface LeadRow {
   fbc: string;
   ip_address: string;
   user_agent: string;
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
-}
-
-function bearer(request: Request): string {
-  const header = request.headers.get('authorization') ?? '';
-  return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
 }
 
 export const POST: APIRoute = async ({ request }) => {

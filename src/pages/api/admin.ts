@@ -32,7 +32,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getDb } from '../../lib/db';
+import { getDb, PRODUCT_STATUSES, parseJsonArray } from '../../lib/db';
 import { enabledCategorySlugs, enabledCategories } from '../../config';
 import {
   requireSession,
@@ -47,8 +47,8 @@ export const prerender = false;
 
 /* ---------- vocabulary (from the original) ---------- */
 
-const STATUSES = new Set(['draft', 'available', 'pending', 'sold', 'hidden']);
-const PATCH_STATUSES = new Set([...STATUSES, 'deleted']);
+const STATUSES = new Set<string>(PRODUCT_STATUSES.filter((status) => status !== 'deleted'));
+const PATCH_STATUSES = new Set<string>(PRODUCT_STATUSES);
 
 const IMAGE_TYPES = new Map<string, string>([
   ['image/jpeg', '.jpg'],
@@ -108,17 +108,6 @@ function cleanImageUrl(value: unknown): string {
     return '';
   }
 }
-
-function parseJsonArray(value: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(value || '[]');
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-/* ---------- R2 (from the original) ---------- */
 
 function r2PublicBase(): string {
   const e = getEnv();

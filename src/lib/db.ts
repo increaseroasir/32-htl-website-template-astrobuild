@@ -17,7 +17,7 @@
  */
 
 import { env } from 'cloudflare:workers';
-import { enabledCategorySlugs, enabledCategories, site } from '../config';
+import { enabledCategorySlugs, enabledCategories, isCategoryEnabled, site } from '../config';
 import type { CategorySlug } from '../config/categories';
 
 /* ------------------------------------------------------------------ */
@@ -109,7 +109,7 @@ export interface Product {
   categoryHref: string;
 }
 
-function parseJsonArray(value: string): string[] {
+export function parseJsonArray(value: string): string[] {
   try {
     const parsed: unknown = JSON.parse(value || '[]');
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
@@ -198,9 +198,9 @@ function enabledCategoryClause(): { sql: string; binds: string[] } | null {
   return { sql: `category IN (${placeholders})`, binds: [...enabledCategorySlugs] };
 }
 
-/** Is this string a category this client actually sells? */
+/** Is this string a category this client actually sells? Type-guard wrapper of config. */
 export function isEnabledCategory(slug: string): slug is CategorySlug {
-  return (enabledCategorySlugs as readonly string[]).includes(slug);
+  return isCategoryEnabled(slug);
 }
 
 /* ------------------------------------------------------------------ */
